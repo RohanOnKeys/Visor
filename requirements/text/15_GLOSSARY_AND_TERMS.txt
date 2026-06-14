@@ -1,0 +1,130 @@
+Visor DOM-to-Agent Context Compiler
+Page 1
+15 - Glossary and Terms
+Visor DOM-to-Agent Context Compiler
+DOC-15 | 0.1 requirements pack | Generated 2026-06-14
+This glossary defines the terms and requirement prefixes used across the entire requirements pack.
+Field
+Value
+Owner
+Rohan PX / Visor project
+Audience
+AI coding agent, reviewer, future contributors
+Status
+Draft baseline for MVP build
+Decision rule
+MVP is local-first, minimal-permission, Chrome Manifest V3, no backend unless explicitly enabled.
+
+Visor DOM-to-Agent Context Compiler
+Page 2
+Document control
+Item
+Value
+Project
+Visor DOM-to-Agent Context Compiler
+Document code
+DOC-15
+Generated on
+2026-06-14
+Primary goal
+Turn raw webpage DOM into safe, structured, agent-ready context.
+MVP boundary
+Chrome extension, local-only compiler, JSON/Markdown export, privacy redaction, tests.
+1. Glossary
+Term
+Definition
+Agent context
+A structured package of page information that an AI agent can consume safely.
+AgentContext
+The versioned JSON output schema produced by Visor.
+ActionElement
+A structured representation of a clickable or editable page element such as a button, link, input, or form.
+activeTab
+A browser extension permission that grants temporary access to the active tab after a user gesture.
+Compiler
+The pipeline that transforms PageSnapshot into AgentContext.
+Content script
+Extension script that runs in the context of a web page and can access the DOM under permission
+constraints.
+DOM
+Document Object Model; the browser representation of a webpage as a tree of nodes.
+Dedupe
+Removal or compression of repeated text blocks.
+Debug mode
+Output mode that shows kept blocks, removed blocks, scores, and compiler notes.
+Extraction
+Process of reading visible and semantic content from a webpage DOM.
+Host permissions
+Extension permissions that allow access to specific origins or URL patterns.
+Manifest V3
+Current Chrome extension manifest architecture using service workers and updated permissions/security
+model.
+Noise
+Page material that usually does not help agents: ads, repeated navigation, cookie banners, hidden nodes,
+footer clutter.
+PageSnapshot
+Intermediate internal model created from the DOM before context compilation.
+Prompt injection
+A malicious or accidental instruction inside untrusted content that tries to alter an AI agent behavior.
+Privacy redaction
+Masking sensitive values such as emails, phones, tokens, and password fields.
+RAG
+Retrieval-Augmented Generation; using chunks of source content with metadata for retrieval.
+Selector hint
+A non-guaranteed CSS/XPath-like hint that helps locate an element later.
+Service worker
+Event-driven background script used by Manifest V3 extensions.
+Site profile
+Domain-specific extraction rules such as preserve or ignore selectors.
+Token budget
+Estimated maximum amount of text to include for an LLM or agent.
+Untrusted data
+Content from the webpage that must never be treated as system/developer instruction.
+2. Naming conventions
+•
+Use PageSnapshot for internal raw-but-cleaned DOM representation.
+•
+Use AgentContext for final output to agents.
+•
+Use ActionElement for anything clickable, editable, or submit-related.
+•
+Use privacyReport for warnings and redaction results.
+
+Visor DOM-to-Agent Context Compiler
+Page 3
+•
+Use compilerNotes for decisions, warnings, and debug evidence.
+3. Requirement prefix map
+Prefix
+Document
+Meaning
+FR
+System Requirements Specification
+Functional requirement.
+NFR
+System Requirements Specification
+Non-functional requirement.
+EXT
+Browser Extension Requirements
+Extension-specific behavior.
+COMP
+Context Compiler Spec
+Compiler behavior.
+SEC
+Privacy Security Threat Model
+Security/privacy behavior.
+UX
+UI UX Requirements
+Interface and interaction behavior.
+API
+Backend API Requirements
+Future backend behavior.
+DB
+Storage Database Requirements
+Storage/migration behavior.
+QA
+Testing QA Acceptance Criteria
+Testing and acceptance behavior.
+REL
+Deployment DevOps Requirements
+Release behavior.

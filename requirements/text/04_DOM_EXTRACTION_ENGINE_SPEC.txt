@@ -1,0 +1,159 @@
+Visor DOM-to-Agent Context Compiler
+Page 1
+04 - DOM Extraction Engine Spec
+Visor DOM-to-Agent Context Compiler
+DOC-04 | 0.1 requirements pack | Generated 2026-06-14
+This specification defines how the content script extracts a safe intermediate PageSnapshot from a live webpage DOM.
+Field
+Value
+Owner
+Rohan PX / Visor project
+Audience
+AI coding agent, reviewer, future contributors
+Status
+Draft baseline for MVP build
+Decision rule
+MVP is local-first, minimal-permission, Chrome Manifest V3, no backend unless explicitly enabled.
+
+Visor DOM-to-Agent Context Compiler
+Page 2
+Document control
+Item
+Value
+Project
+Visor DOM-to-Agent Context Compiler
+Document code
+DOC-04
+Generated on
+2026-06-14
+Primary goal
+Turn raw webpage DOM into safe, structured, agent-ready context.
+MVP boundary
+Chrome extension, local-only compiler, JSON/Markdown export, privacy redaction, tests.
+1. Extraction goal
+The extractor creates an intermediate PageSnapshot from the active page. It must preserve content needed for an AI agent
+while removing or labeling material that is hidden, duplicated, irrelevant, unsafe, or non-semantic.
+2. Pipeline
+Stage
+Input
+Output
+Notes
+1. Snapshot
+Live DOM
+Candidate nodes
+Traverse document body; avoid script execution.
+2. Visibility filter
+Candidate nodes
+Visible nodes
+Use computed style, bounding box, aria-hidden, hidden
+attribute.
+3. Semantic extractio
+n
+Visible nodes
+Blocks
+Headings, text, links, tables, forms, buttons, media, code.
+4. Context attachmen
+t
+Blocks
+Blocks with surroundings
+Attach nearby heading, section, form label, table caption.
+5. Noise marking
+Blocks
+Kept/removed candidates
+Mark rather than delete in debug mode.
+6. Snapshot validatio
+n
+PageSnapshot
+Valid snapshot or error
+Use schema validation before compiler.
+3. Preserve list
+•
+Document title, URL, canonical URL, meta description, OpenGraph title/description where useful.
+•
+H1-H6 headings with hierarchy level and DOM order.
+•
+Paragraphs, list items, blockquotes, article text, visible labels, error messages, status messages.
+•
+Links with visible text, href, title, rel, and nearby context.
+•
+Buttons and role=button elements with aria-label/title/text/nearby context.
+•
+Forms, inputs, selects, textareas, labels, placeholders, required flags, disabled state, validation text.
+•
+Tables including headers, captions, row/column values, and surrounding heading.
+•
+Code blocks, pre tags, inline code in documentation contexts.
+•
+Images only as metadata: alt text, caption, src domain, dimensions if relevant.
+4. Remove or down-rank list
+•
+script, style, noscript, template, tracking pixels, invisible SVG noise.
+•
+Hidden elements: display none, visibility hidden, opacity zero with no interaction role, hidden attribute, aria-hidden true.
+•
+Cookie banners, ad containers, newsletter popups, social share widgets, generic footer legal links.
+
+Visor DOM-to-Agent Context Compiler
+Page 3
+•
+Repeated navigation, duplicated breadcrumbs, repeated card templates, sidebars with unrelated content.
+•
+Empty elements and text shorter than a configurable threshold unless action labels require them.
+5. Visibility heuristic
+function isProbablyVisible(el: Element): boolean {
+  const style = window.getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+  if (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true') return false;
+  if (rect.width === 0 && rect.height === 0 && !isSemanticInput(el)) return false;
+  return true;
+}
+6. PageSnapshot schema
+type PageSnapshot = {
+  schemaVersion: 'page_snapshot.v1';
+  source: {
+    url: string;
+    canonicalUrl?: string;
+    title: string;
+    capturedAt: string;
+    language?: string;
+  };
+  metadata: Record<string, string>;
+  headings: HeadingBlock[];
+  textBlocks: TextBlock[];
+  links: LinkBlock[];
+  actions: ActionBlock[];
+  forms: FormBlock[];
+  tables: TableBlock[];
+  media: MediaBlock[];
+  codeBlocks: CodeBlock[];
+  stats: DOMStats;
+  warnings: ExtractionWarning[];
+};
+7. Edge cases
+Case
+Expected behavior
+Shadow DOM
+Traverse open shadow roots when safe; report closed shadow roots as inaccessible.
+Iframes
+Same-origin iframe may be inspected; cross-origin iframe must be reported as inaccessible.
+Infinite scroll
+MVP extracts currently loaded DOM only; do not auto-scroll.
+Dynamic React apps
+Extract visible rendered DOM; do not infer hidden application state.
+Very large DOM
+Apply node cap, block cap, and partial snapshot warning.
+Canvas-only page
+Return metadata and warning that semantic DOM content is limited.
+
+Visor DOM-to-Agent Context Compiler
+Page 4
+Source and reference notes
+These sources are used to ground platform/security assumptions. The implementation must still verify current platform
+behavior during development.
+Reference
+Why it matters
+MDN WebExtensions - Content scripts: https://developer.mozilla.org/en-US/do
+cs/Mozilla/Add-ons/WebExtensions/Content_scripts
+Grounding for content script behavior, host permissions, and
+page DOM access.

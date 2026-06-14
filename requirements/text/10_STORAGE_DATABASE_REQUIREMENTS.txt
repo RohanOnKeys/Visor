@@ -1,0 +1,155 @@
+Visor DOM-to-Agent Context Compiler
+Page 1
+10 - Storage Database Requirements
+Visor DOM-to-Agent Context Compiler
+DOC-10 | 0.1 requirements pack | Generated 2026-06-14
+This specification defines local extension storage, data retention policies, future database model, migrations, and
+do-not-store rules.
+Field
+Value
+Owner
+Rohan PX / Visor project
+Audience
+AI coding agent, reviewer, future contributors
+Status
+Draft baseline for MVP build
+Decision rule
+MVP is local-first, minimal-permission, Chrome Manifest V3, no backend unless explicitly enabled.
+
+Visor DOM-to-Agent Context Compiler
+Page 2
+Document control
+Item
+Value
+Project
+Visor DOM-to-Agent Context Compiler
+Document code
+DOC-10
+Generated on
+2026-06-14
+Primary goal
+Turn raw webpage DOM into safe, structured, agent-ready context.
+MVP boundary
+Chrome extension, local-only compiler, JSON/Markdown export, privacy redaction, tests.
+1. Storage principle
+The MVP stores settings and site profiles locally. It should not store full page contents by default. Full compiled contexts
+may exist temporarily in memory for preview and clipboard export.
+2. Local storage objects
+type UserSettings = {
+  defaultMode: 'compact' | 'detailed' | 'agent_action' | 'rag' | 'debug';
+  privacyLevel: 'low' | 'medium' | 'strict';
+  tokenBudget: number;
+  defaultExport: 'json' | 'markdown' | 'prompt_block';
+  debugMode: boolean;
+  blockedDomains: string[];
+};
+type SiteProfile = {
+  id: string;
+  domain: string;
+  preserveSelectors: string[];
+  ignoreSelectors: string[];
+  mainContentSelector?: string;
+  privacyLevelOverride?: 'low' | 'medium' | 'strict';
+  createdAt: string;
+  updatedAt: string;
+};
+type RecentCompileMetadata = {
+  id: string;
+  url: string;
+  title: string;
+  createdAt: string;
+  mode: string;
+  tokenCount: number;
+  riskLevel: string;
+};
+3. Storage policy
+Object
+Storage location
+Retention
+Notes
+UserSettings
+chrome.storage.local or
+browser storage adapter
+Until user clears
+Small and non-sensitive.
+SiteProfile
+Local extension storage
+Until deleted
+Domain rules may reveal habits; allow
+export/delete.
+RecentCompileMetadata
+Optional local storage
+Configurable or off
+Do not store full content.
+Full PageSnapshot
+Memory only in MVP
+Until popup/preview closes
+No persistence by default.
+Full AgentContext
+Memory/clipboard/download
+by user action
+User-controlled
+No automatic storage.
+4. Database future model
+
+Visor DOM-to-Agent Context Compiler
+Page 3
+users(id, email_hash, created_at, settings_json)
+site_profiles(id, user_id, domain, preserve_selectors_json, ignore_selectors_json,
+  created_at, updated_at)
+contexts(id, user_id, title, url_hash, url_encrypted, context_encrypted, token_count,
+  risk_level, created_at)
+audit_events(id, user_id, event_type, object_id, created_at, metadata_json)
+api_keys(id, user_id, key_hash, scopes_json, created_at, revoked_at)
+5. Migration requirements
+ID
+Requirement
+Priority
+Acceptance signal
+DB-001
+Every local object must include schemaVersion or appVersion
+metadata.
+P0
+Migration tests can detect old settings.
+DB-002
+Storage adapter must supply defaults when stored data is missing
+or invalid.
+P0
+Invalid settings fixture falls back safely.
+DB-003
+User must be able to clear local settings and metadata.
+P0
+Clear local data button works.
+DB-004
+Site profiles must be exportable/importable as JSON.
+P1
+User can move rules across browsers.
+DB-005
+Future cloud storage must support user deletion.
+P0 future
+Deletion workflow is documented before
+backend launch.
+6. Do-not-store list
+•
+Password field values.
+•
+OTP values.
+•
+Session tokens or cookies.
+•
+Full private dashboard content by default.
+•
+Banking, medical, government, or educational portal content without explicit save action.
+•
+Authentication headers or browser cookies.
+
+Visor DOM-to-Agent Context Compiler
+Page 4
+Source and reference notes
+These sources are used to ground platform/security assumptions. The implementation must still verify current platform
+behavior during development.
+Reference
+Why it matters
+MDN WebExtensions - storage API: https://developer.mozilla.org/en-US/docs/
+Mozilla/Add-ons/WebExtensions/API/storage
+Grounding for extension storage concepts and permissions.
