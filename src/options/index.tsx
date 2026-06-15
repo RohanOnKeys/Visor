@@ -12,6 +12,7 @@ function Options() {
   const [tokenBudget, setTokenBudget] = useState<number>(4000);
   const [defaultExport, setDefaultExport] = useState<UserSettings['defaultExport']>('json');
   const [debugMode, setDebugMode] = useState<boolean>(false);
+  const [autoCompile, setAutoCompile] = useState<boolean>(true);
   const [blockedDomainsText, setBlockedDomainsText] = useState<string>('');
   
   // Site Profiles states
@@ -34,6 +35,7 @@ function Options() {
       setTokenBudget(settings.tokenBudget);
       setDefaultExport(settings.defaultExport);
       setDebugMode(settings.debugMode);
+      setAutoCompile(settings.autoCompile);
       setBlockedDomainsText(settings.blockedDomains.join('\n'));
 
       const profiles = await loadSiteProfiles();
@@ -85,6 +87,7 @@ function Options() {
         tokenBudget,
         defaultExport,
         debugMode,
+        autoCompile,
         blockedDomains
       };
 
@@ -291,6 +294,17 @@ function Options() {
                 style={{ width: '18px', height: '18px' }}
               />
               <label htmlFor="debugToggle" style={{ fontSize: '14px', cursor: 'pointer' }}>Enable compiler debug logs in context output</label>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="autoCompileToggle"
+                checked={autoCompile}
+                onChange={(e) => setAutoCompile(e.target.checked)}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <label htmlFor="autoCompileToggle" style={{ fontSize: '14px', cursor: 'pointer' }}>Keep Visor active and auto-read the active tab while browsing</label>
             </div>
 
             <button onClick={handleSaveSettings} className="btn-primary" style={{ width: '100%', height: '38px', marginTop: '6px' }}>

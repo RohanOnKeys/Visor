@@ -301,6 +301,7 @@ export type UserSettings = {
   tokenBudget: number;
   defaultExport: 'json' | 'markdown' | 'prompt_block';
   debugMode: boolean;
+  autoCompile: boolean;
   blockedDomains: string[];
 };
 

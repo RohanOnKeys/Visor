@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   tokenBudget: 4000,
   defaultExport: 'json',
   debugMode: false,
+  autoCompile: true,
   blockedDomains: []
 };
 

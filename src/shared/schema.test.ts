@@ -9,6 +9,7 @@ describe('Zod Schema Validation', () => {
       tokenBudget: 4000,
       defaultExport: 'json',
       debugMode: false,
+      autoCompile: true,
       blockedDomains: ['test.com']
     };
 

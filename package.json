@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:extension": "vite build --watch",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

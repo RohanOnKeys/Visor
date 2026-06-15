@@ -109,7 +109,7 @@ describe('Acceptance guardrails', () => {
     const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'manifest.json'), 'utf8'));
 
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.permissions).toEqual(['activeTab', 'scripting', 'storage', 'identity']);
+    expect(manifest.permissions).toEqual(['activeTab', 'scripting', 'storage', 'identity', 'tabs']);
     expect(manifest.host_permissions).toEqual(['https://www.googleapis.com/*']);
     expect(manifest.oauth2.scopes).toEqual(['openid', 'email', 'profile']);
   });

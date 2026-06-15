@@ -14,6 +14,7 @@ function Popup() {
   const [status, setStatus] = useState<'idle' | 'compiling' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [compileResult, setCompileResult] = useState<CompileResponse | null>(null);
+  const [lastAutoCompiledAt, setLastAutoCompiledAt] = useState<string>('');
   const [authSession, setAuthSession] = useState<AuthSession | undefined>();
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error'>('loading');
   const [authError, setAuthError] = useState<string>('');
@@ -21,18 +22,21 @@ function Popup() {
   // Initialize popup states from storage settings and tab info
   useEffect(() => {
     async function init() {
+      let currentUrl = '';
       // 1. Get current active tab
       if (typeof chrome !== 'undefined' && chrome.tabs) {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab) {
+          currentUrl = tab.url || '';
           setActiveTabInfo({
             title: tab.title || 'Untitled Page',
-            url: tab.url || ''
+            url: currentUrl
           });
         }
       } else {
         // Fallback for tests or local rendering
-        setActiveTabInfo({ title: 'Mock Test Article Page', url: 'https://example.com/mock-article' });
+        currentUrl = 'https://example.com/mock-article';
+        setActiveTabInfo({ title: 'Mock Test Article Page', url: currentUrl });
       }
 
       // 2. Load settings defaults
@@ -40,6 +44,19 @@ function Popup() {
       setMode(settings.defaultMode);
       setPrivacyLevel(settings.privacyLevel);
       setTokenBudget(settings.tokenBudget);
+
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        chrome.storage.local.get(['lastCompileResult', 'lastAutoCompiledAt'], (result) => {
+          const saved = result.lastCompileResult as Omit<Extract<CompileResponse, { ok: true }>, 'ok'> | undefined;
+          if (saved?.context?.source?.url && saved.context.source.url === currentUrl) {
+            setCompileResult({ ok: true, ...saved });
+            setStatus('success');
+          }
+          if (typeof result.lastAutoCompiledAt === 'string') {
+            setLastAutoCompiledAt(result.lastAutoCompiledAt);
+          }
+        });
+      }
 
       const session = await getAuthSession();
       setAuthSession(session);
@@ -213,6 +230,9 @@ function Popup() {
         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           {truncateUrl(activeTabInfo.url)}
         </div>
+        <div style={{ fontSize: '11px', color: 'var(--secondary)', marginTop: '6px', fontWeight: 700 }}>
+          Auto-read is active{lastAutoCompiledAt ? ` · updated ${new Date(lastAutoCompiledAt).toLocaleTimeString()}` : ''}
+        </div>
       </div>
 
       {/* Compiler Configurations Panel */}
@@ -255,7 +275,7 @@ function Popup() {
         style={{ width: '100%', height: '40px' }}
         disabled={status === 'compiling'}
       >
-        {status === 'compiling' ? 'Compiling Page...' : 'Compile Page'}
+        {status === 'compiling' ? 'Compiling Page...' : 'Refresh Page Context'}
       </button>
 
       {/* Feedback Panels */}

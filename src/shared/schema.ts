@@ -306,6 +306,7 @@ export const UserSettingsSchema = z.object({
   tokenBudget: z.number().int().min(100),
   defaultExport: z.enum(['json', 'markdown', 'prompt_block']),
   debugMode: z.boolean(),
+  autoCompile: z.boolean(),
   blockedDomains: z.array(z.string())
 });
 
