@@ -22,7 +22,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["visor-logo.png"],
+      "resources": ["visor-logo.png", "llm-chatgpt.png", "llm-grok.png", "llm-gemini.png", "llm-claude.png"],
       "matches": ["<all_urls>"]
     }
   ],

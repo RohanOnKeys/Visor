@@ -64,6 +64,18 @@ function Preview() {
     gemini: 'https://gemini.google.com/app',
     claude: 'https://claude.ai/new'
   };
+  const providerLogoFiles: Record<AgentProvider, string> = {
+    chatgpt: 'llm-chatgpt.png',
+    grok: 'llm-grok.png',
+    gemini: 'llm-gemini.png',
+    claude: 'llm-claude.png'
+  };
+  const providerLabels: Record<AgentProvider, string> = {
+    chatgpt: 'GPT',
+    grok: 'Grok',
+    gemini: 'Gemini',
+    claude: 'Claude'
+  };
 
   const handleProviderExport = async (provider: AgentProvider) => {
     if (!data) return;
@@ -144,10 +156,22 @@ function Preview() {
           <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Opens your selected agent and fills its prompt box. Clipboard is kept as fallback.</div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => handleProviderExport('chatgpt')} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>GPT</button>
-          <button onClick={() => handleProviderExport('grok')} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>Grok</button>
-          <button onClick={() => handleProviderExport('gemini')} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>Gemini</button>
-          <button onClick={() => handleProviderExport('claude')} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>Claude</button>
+          {(['chatgpt', 'grok', 'gemini', 'claude'] as AgentProvider[]).map((provider) => (
+            <button
+              key={provider}
+              onClick={() => handleProviderExport(provider)}
+              className="btn-secondary"
+              title={`Export to ${providerLabels[provider]}`}
+              aria-label={`Export to ${providerLabels[provider]}`}
+              style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden' }}
+            >
+              <img
+                src={chrome.runtime.getURL(providerLogoFiles[provider])}
+                alt=""
+                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
