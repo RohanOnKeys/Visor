@@ -13,6 +13,7 @@ function Options() {
   const [defaultExport, setDefaultExport] = useState<UserSettings['defaultExport']>('json');
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [autoCompile, setAutoCompile] = useState<boolean>(true);
+  const [widgetEnabled, setWidgetEnabled] = useState<boolean>(true);
   const [blockedDomainsText, setBlockedDomainsText] = useState<string>('');
   
   // Site Profiles states
@@ -36,6 +37,7 @@ function Options() {
       setDefaultExport(settings.defaultExport);
       setDebugMode(settings.debugMode);
       setAutoCompile(settings.autoCompile);
+      setWidgetEnabled(settings.widgetEnabled);
       setBlockedDomainsText(settings.blockedDomains.join('\n'));
 
       const profiles = await loadSiteProfiles();
@@ -88,6 +90,7 @@ function Options() {
         defaultExport,
         debugMode,
         autoCompile,
+        widgetEnabled,
         blockedDomains
       };
 
@@ -312,6 +315,17 @@ function Options() {
                 style={{ width: '18px', height: '18px' }}
               />
               <label htmlFor="autoCompileToggle" style={{ fontSize: '14px', cursor: 'pointer' }}>Keep Visor active and auto-read the active tab while browsing</label>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="widgetEnabledToggle"
+                checked={widgetEnabled}
+                onChange={(e) => setWidgetEnabled(e.target.checked)}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <label htmlFor="widgetEnabledToggle" style={{ fontSize: '14px', cursor: 'pointer' }}>Show floating export widget on supported pages</label>
             </div>
 
             <button onClick={handleSaveSettings} className="btn-primary" style={{ width: '100%', height: '38px', marginTop: '6px' }}>

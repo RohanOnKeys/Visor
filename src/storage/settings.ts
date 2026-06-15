@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   defaultExport: 'json',
   debugMode: false,
   autoCompile: true,
+  widgetEnabled: true,
   blockedDomains: []
 };
 

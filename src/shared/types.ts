@@ -302,6 +302,7 @@ export type UserSettings = {
   defaultExport: 'json' | 'markdown' | 'prompt_block';
   debugMode: boolean;
   autoCompile: boolean;
+  widgetEnabled: boolean;
   blockedDomains: string[];
 };
 

@@ -371,6 +371,24 @@ export function compileSnapshot(
     src: redactStructuredText(item.src, `${item.id}.src`)
   }));
 
+  const structuredContext = shapeStructuredContext(request.mode, {
+    actionableElements,
+    layoutGroups,
+    dataElements,
+    links,
+    forms,
+    tables,
+    media
+  });
+
+  if (structuredContext.note) {
+    compilerNotes.push({
+      level: 'info',
+      category: 'filtering',
+      message: structuredContext.note
+    });
+  }
+
   const mergedPrivacyReport = mergePrivacyReports(privacyReport, structuredRedactions, request.privacyLevel);
 
   // Compile final AgentContext object
@@ -391,13 +409,13 @@ export function compileSnapshot(
     },
     hierarchy,
     mainContent: budgetedBlocks,
-    actionableElements,
-    layoutGroups,
-    dataElements,
-    links,
-    forms,
-    tables,
-    media,
+    actionableElements: structuredContext.actionableElements,
+    layoutGroups: structuredContext.layoutGroups,
+    dataElements: structuredContext.dataElements,
+    links: structuredContext.links,
+    forms: structuredContext.forms,
+    tables: structuredContext.tables,
+    media: structuredContext.media,
     tokenProfile: profile,
     privacyReport: mergedPrivacyReport,
     compilerNotes
@@ -528,6 +546,78 @@ function createRagChunks(blocks: ContentBlock[]): ContentBlock[] {
   }
 
   return chunks.sort((a, b) => a.sourceOrder - b.sourceOrder);
+}
+
+type StructuredContextSlices = Pick<
+  AgentContext,
+  'actionableElements' | 'layoutGroups' | 'dataElements' | 'links' | 'forms' | 'tables' | 'media'
+>;
+
+function shapeStructuredContext(
+  mode: CompileRequest['mode'],
+  slices: StructuredContextSlices
+): StructuredContextSlices & { note?: string } {
+  if (mode === 'debug' || mode === 'detailed') {
+    return {
+      ...slices,
+      note: mode === 'debug'
+        ? 'Debug mode preserved all structured context arrays for inspection.'
+        : 'Detailed mode preserved full structured context arrays.'
+    };
+  }
+
+  if (mode === 'rag') {
+    return {
+      actionableElements: [],
+      forms: [],
+      links: slices.links.slice(0, 40),
+      layoutGroups: slices.layoutGroups
+        .filter((group) => ['lead', 'article_section', 'infobox', 'references', 'toc', 'table'].includes(group.role))
+        .slice(0, 20),
+      dataElements: slices.dataElements.slice(0, 40),
+      tables: slices.tables.slice(0, 10),
+      media: slices.media
+        .filter((item) => item.alt || item.caption)
+        .slice(0, 12),
+      note: 'RAG mode removed interactive controls and kept chunk-adjacent structured data, tables, media labels, and reference links.'
+    };
+  }
+
+  if (mode === 'agent_action') {
+    const actionRelatedGroupIds = new Set(
+      slices.layoutGroups
+        .filter((group) => group.childActionIds.length > 0 || /\b(error|required|submit|checkout|login|sign|search|save|continue|next)\b/i.test(group.text))
+        .map((group) => group.id)
+    );
+
+    return {
+      actionableElements: slices.actionableElements,
+      forms: slices.forms,
+      links: slices.links.slice(0, 60),
+      layoutGroups: slices.layoutGroups
+        .filter((group) => actionRelatedGroupIds.has(group.id) || group.importanceScore >= 7)
+        .slice(0, 24),
+      dataElements: slices.dataElements.slice(0, 30),
+      tables: slices.tables.slice(0, 6),
+      media: slices.media.slice(0, 8),
+      note: 'Agent Mode prioritized controls, forms, operational layout groups, and nearby structured data.'
+    };
+  }
+
+  return {
+    actionableElements: slices.actionableElements.slice(0, 12),
+    forms: slices.forms.slice(0, 4),
+    links: slices.links.slice(0, 25),
+    layoutGroups: slices.layoutGroups
+      .filter((group) => group.importanceScore >= 6)
+      .slice(0, 10),
+    dataElements: slices.dataElements.slice(0, 20),
+    tables: slices.tables.slice(0, 4),
+    media: slices.media
+      .filter((item) => item.alt || item.caption)
+      .slice(0, 8),
+    note: 'Compact mode trimmed structured context arrays to the highest-signal items.'
+  };
 }
 
 function mergePrivacyReports(

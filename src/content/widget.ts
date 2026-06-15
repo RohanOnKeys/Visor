@@ -23,6 +23,8 @@ type WidgetState = {
   tokenBudget: number;
 };
 
+let mountedHost: HTMLDivElement | undefined;
+
 function shouldMountWidget(): boolean {
   if (window.top !== window.self) return false;
   if (resolveAgentProvider(window.location.hostname)) return false;
@@ -74,7 +76,8 @@ function createStyle(): HTMLStyleElement {
     }
 
     .visor-main,
-    .visor-action {
+    .visor-action,
+    .visor-close {
       position: absolute;
       border: 1px solid var(--visor-border);
       border-radius: 999px;
@@ -93,10 +96,12 @@ function createStyle(): HTMLStyleElement {
       border-color: transparent;
       background: transparent;
       box-shadow: none;
+      touch-action: none;
     }
 
     .visor-main:hover,
-    .visor-action:hover {
+    .visor-action:hover,
+    .visor-close:hover {
       border-color: rgba(30, 215, 96, 0.88);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36), 0 0 22px rgba(30, 215, 96, 0.22);
     }
@@ -137,6 +142,25 @@ function createStyle(): HTMLStyleElement {
       transform: translate(var(--x), var(--y)) scale(0.92);
     }
 
+    .visor-close {
+      width: 24px;
+      height: 24px;
+      left: 11px;
+      top: 11px;
+      background: var(--visor-green);
+      color: #001409;
+      font: 700 18px/1 Inter, ui-sans-serif, system-ui, sans-serif;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-28px, -28px) scale(0.7);
+    }
+
+    .visor-widget.open .visor-close {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-34px, -34px) scale(1);
+    }
+
     .visor-widget.open .visor-actions:hover .visor-action {
       transform: translate(calc(var(--x) * 0.82), calc(var(--y) * 0.82)) scale(0.74);
       opacity: 0.78;
@@ -161,16 +185,27 @@ function createStyle(): HTMLStyleElement {
       cursor: wait;
       opacity: 0.62;
     }
+
+    .visor-widget.dragging .visor-main {
+      cursor: grabbing;
+    }
   `;
   return style;
 }
 
+export async function unmountVisorWidget(): Promise<void> {
+  mountedHost?.remove();
+  mountedHost = undefined;
+  delete document.documentElement.dataset.visorWidgetMounted;
+}
+
 export async function mountVisorWidget(): Promise<void> {
   if (!shouldMountWidget()) return;
-  document.documentElement.dataset.visorWidgetMounted = 'true';
-
   const settings = await chrome.storage.local.get(['settings']);
   const savedSettings = (settings.settings || {}) as Partial<UserSettings>;
+  if (savedSettings.widgetEnabled === false) return;
+
+  document.documentElement.dataset.visorWidgetMounted = 'true';
   const state: WidgetState = {
     open: false,
     mode: savedSettings.defaultMode || 'agent_action',
@@ -180,6 +215,7 @@ export async function mountVisorWidget(): Promise<void> {
 
   const host = document.createElement('div');
   host.id = 'visor-floating-widget-root';
+  mountedHost = host;
   const shadow = host.attachShadow({ mode: 'open' });
   const wrapper = document.createElement('div');
   wrapper.className = 'visor-widget';
@@ -198,11 +234,43 @@ export async function mountVisorWidget(): Promise<void> {
   const actions = document.createElement('div');
   actions.className = 'visor-actions';
 
+  const closeButton = document.createElement('button');
+  closeButton.className = 'visor-close';
+  closeButton.type = 'button';
+  closeButton.title = 'Hide Visor widget';
+  closeButton.setAttribute('aria-label', 'Hide Visor widget');
+  closeButton.textContent = '×';
+  closeButton.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    const current = await chrome.storage.local.get(['settings']);
+    const currentSettings = (current.settings || {}) as Partial<UserSettings>;
+    await chrome.storage.local.set({
+      settings: {
+        ...currentSettings,
+        widgetEnabled: false
+      }
+    });
+    await unmountVisorWidget();
+  });
+
   const radialPositions: Record<AgentProvider, [number, number]> = {
     chatgpt: [-40, -2],
     grok: [-34, -38],
     gemini: [0, -54],
     claude: [34, -38]
+  };
+  const actionButtons = new Map<AgentProvider, HTMLButtonElement>();
+
+  const updateRadialPositions = () => {
+    const rect = wrapper.getBoundingClientRect();
+    const horizontalSign = rect.left < 76 ? -1 : 1;
+    const verticalSign = rect.top < 76 ? -1 : 1;
+
+    actionButtons.forEach((button, provider) => {
+      const [baseX, baseY] = radialPositions[provider];
+      button.style.setProperty('--x', `${baseX * horizontalSign}px`);
+      button.style.setProperty('--y', `${baseY * verticalSign}px`);
+    });
   };
 
   (Object.keys(providerLabels) as AgentProvider[]).forEach((provider) => {
@@ -213,6 +281,7 @@ export async function mountVisorWidget(): Promise<void> {
     button.setAttribute('aria-label', `Dump current page context to ${providerLabels[provider]}`);
     button.style.setProperty('--x', `${radialPositions[provider][0]}px`);
     button.style.setProperty('--y', `${radialPositions[provider][1]}px`);
+    actionButtons.set(provider, button);
 
     const icon = document.createElement('img');
     icon.src = chrome.runtime.getURL(providerLogoFiles[provider]);
@@ -238,14 +307,86 @@ export async function mountVisorWidget(): Promise<void> {
   });
 
   function render() {
+    updateRadialPositions();
     wrapper.classList.toggle('open', state.open);
     actions.querySelectorAll<HTMLButtonElement>('.visor-action').forEach((button) => {
       button.disabled = Boolean(state.exporting);
     });
   }
 
+  const applySavedPosition = async () => {
+    const saved = await chrome.storage.local.get(['visorWidgetPosition']);
+    const position = saved.visorWidgetPosition as { left?: number; top?: number } | undefined;
+    if (typeof position?.left !== 'number' || typeof position?.top !== 'number') return;
+
+    const left = Math.min(Math.max(8, position.left), Math.max(8, window.innerWidth - 54));
+    const top = Math.min(Math.max(8, position.top), Math.max(8, window.innerHeight - 54));
+    wrapper.style.left = `${left}px`;
+    wrapper.style.top = `${top}px`;
+    wrapper.style.right = 'auto';
+    wrapper.style.bottom = 'auto';
+    updateRadialPositions();
+  };
+
+  let dragTimer: number | undefined;
+  let dragging = false;
+  let suppressClick = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  const stopDrag = async () => {
+    if (dragTimer) {
+      window.clearTimeout(dragTimer);
+      dragTimer = undefined;
+    }
+
+    if (!dragging) return;
+    dragging = false;
+    wrapper.classList.remove('dragging');
+    const rect = wrapper.getBoundingClientRect();
+    await chrome.storage.local.set({ visorWidgetPosition: { left: rect.left, top: rect.top } });
+  };
+
+  mainButton.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    const rect = wrapper.getBoundingClientRect();
+    dragOffsetX = event.clientX - rect.left;
+    dragOffsetY = event.clientY - rect.top;
+    dragTimer = window.setTimeout(() => {
+      dragging = true;
+      suppressClick = true;
+      state.open = false;
+      wrapper.classList.add('dragging');
+      render();
+      mainButton.setPointerCapture(event.pointerId);
+    }, 260);
+  });
+
+  mainButton.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    const nextLeft = Math.min(Math.max(8, event.clientX - dragOffsetX), Math.max(8, window.innerWidth - wrapper.offsetWidth - 8));
+    const nextTop = Math.min(Math.max(8, event.clientY - dragOffsetY), Math.max(8, window.innerHeight - wrapper.offsetHeight - 8));
+    wrapper.style.left = `${nextLeft}px`;
+    wrapper.style.top = `${nextTop}px`;
+    wrapper.style.right = 'auto';
+    wrapper.style.bottom = 'auto';
+    updateRadialPositions();
+  });
+
+  mainButton.addEventListener('pointerup', () => {
+    void stopDrag();
+  });
+
+  mainButton.addEventListener('pointercancel', () => {
+    void stopDrag();
+  });
+
   mainButton.addEventListener('click', (event) => {
     event.stopPropagation();
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     state.open = !state.open;
     render();
   });
@@ -258,8 +399,9 @@ export async function mountVisorWidget(): Promise<void> {
   });
 
   shadow.append(createStyle(), wrapper);
-  wrapper.append(actions, mainButton);
+  wrapper.append(actions, closeButton, mainButton);
   render();
+  void applySavedPosition();
 
   const appendWidget = () => {
     if (!document.body.contains(host)) {

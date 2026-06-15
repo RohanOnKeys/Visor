@@ -91,6 +91,90 @@ describe('Compiler modes', () => {
     expect(result.context.compilerNotes.some((note) => note.message.includes('expanded the effective budget'))).toBe(true);
   });
 
+  it('shapes structured arrays differently for RAG and Agent Mode', () => {
+    const structuredSnapshot = createSnapshot({
+      actions: [
+        {
+          id: 'action-submit',
+          type: 'button',
+          label: 'Continue checkout',
+          selectorHint: 'button.checkout',
+          textContext: 'Continue checkout',
+          sourceOrder: 5
+        }
+      ],
+      forms: [
+        {
+          id: 'form-checkout',
+          selectorHint: 'form.checkout',
+          purpose: 'checkout',
+          fields: [],
+          submitControls: [],
+          sourceOrder: 6
+        }
+      ],
+      links: Array.from({ length: 3 }, (_, index) => ({
+        id: `link-${index}`,
+        text: `Reference ${index}`,
+        href: `https://example.com/${index}`,
+        selectorHint: `main a:nth-child(${index + 1})`,
+        sourceOrder: 7 + index
+      })),
+      layoutGroups: [
+        {
+          id: 'group-lead',
+          label: 'Lead',
+          role: 'lead',
+          text: 'Important overview with no controls.',
+          selectorHint: 'main',
+          sourceOrder: 10,
+          childActionIds: [],
+          childMediaIds: []
+        },
+        {
+          id: 'group-action',
+          label: 'Checkout',
+          role: 'card',
+          text: 'Continue checkout and submit payment.',
+          selectorHint: '.checkout-card',
+          sourceOrder: 11,
+          childActionIds: ['action-submit'],
+          childMediaIds: []
+        }
+      ],
+      media: [
+        {
+          id: 'media-hero',
+          type: 'image',
+          alt: 'Product hero',
+          src: 'https://example.com/hero.png',
+          selectorHint: 'img.hero',
+          sourceOrder: 12
+        }
+      ]
+    });
+
+    const rag = compileSnapshot(structuredSnapshot, {
+      mode: 'rag',
+      privacyLevel: 'medium',
+      tokenBudget: 4000
+    });
+    const agent = compileSnapshot(structuredSnapshot, {
+      mode: 'agent_action',
+      privacyLevel: 'medium',
+      tokenBudget: 4000
+    });
+
+    expect(rag.context.actionableElements).toHaveLength(0);
+    expect(rag.context.forms).toHaveLength(0);
+    expect(rag.context.layoutGroups.map((group) => group.id)).toContain('group-lead');
+    expect(rag.context.layoutGroups.map((group) => group.id)).not.toContain('group-action');
+    expect(agent.context.actionableElements).toHaveLength(1);
+    expect(agent.context.forms).toHaveLength(1);
+    expect(agent.context.layoutGroups.map((group) => group.id)).toContain('group-action');
+    expect(agent.context.compilerNotes.some((note) => note.message.includes('Agent Mode prioritized controls'))).toBe(true);
+  });
+
   it('redacts and reports sensitive values in structured fields', () => {
     const result = compileSnapshot(createSnapshot({
       links: [

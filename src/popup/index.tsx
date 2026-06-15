@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AgentProvider, AuthSession, CompileRequest, CompileResponse, PendingAgentExport } from '../shared/types';
-import { loadSettings } from '../storage/settings';
+import { loadSettings, saveSettings } from '../storage/settings';
 import { getAuthSession, signInWithGoogleFromClient, signOutFromClient } from '../auth/client';
 import '../index.css';
 
@@ -18,6 +18,7 @@ function Popup() {
   const [authSession, setAuthSession] = useState<AuthSession | undefined>();
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error'>('loading');
   const [authError, setAuthError] = useState<string>('');
+  const [widgetEnabled, setWidgetEnabled] = useState<boolean>(true);
 
   // Initialize popup states from storage settings and tab info
   useEffect(() => {
@@ -44,6 +45,7 @@ function Popup() {
       setMode(settings.defaultMode);
       setPrivacyLevel(settings.privacyLevel);
       setTokenBudget(settings.tokenBudget);
+      setWidgetEnabled(settings.widgetEnabled);
 
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.get(['lastCompileResult', 'lastAutoCompiledAt'], (result) => {
@@ -193,6 +195,24 @@ function Popup() {
     }
   };
 
+  const updateCurrentTabWidget = async (enabled: boolean) => {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return;
+
+    chrome.tabs.sendMessage(tab.id, { type: 'VISOR_WIDGET_SET_ENABLED', payload: { enabled } }, () => {
+      void chrome.runtime.lastError;
+    });
+  };
+
+  const handleWidgetToggle = async (enabled: boolean) => {
+    setWidgetEnabled(enabled);
+    const settings = await loadSettings();
+    await saveSettings({ ...settings, widgetEnabled: enabled });
+    await updateCurrentTabWidget(enabled);
+  };
+
   // Truncate long URLs helper
   const truncateUrl = (u: string) => {
     if (!u) return '';
@@ -250,6 +270,35 @@ function Popup() {
           Auto-read is active{lastAutoCompiledAt ? ` · updated ${new Date(lastAutoCompiledAt).toLocaleTimeString()}` : ''}
         </div>
       </div>
+
+      <label
+        htmlFor="visorWidgetToggle"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          padding: '10px 12px',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          background: 'var(--bg-card)',
+          cursor: 'pointer'
+        }}
+      >
+        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700 }}>Floating widget</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+            {widgetEnabled ? 'Visible on this page' : 'Hidden until relaunched'}
+          </span>
+        </span>
+        <input
+          id="visorWidgetToggle"
+          type="checkbox"
+          checked={widgetEnabled}
+          onChange={(event) => handleWidgetToggle(event.target.checked)}
+          style={{ width: '18px', height: '18px' }}
+        />
+      </label>
 
       {/* Compiler Configurations Panel */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
