@@ -152,13 +152,13 @@ function createStyle(): HTMLStyleElement {
       font: 700 18px/1 Inter, ui-sans-serif, system-ui, sans-serif;
       opacity: 0;
       pointer-events: none;
-      transform: translate(-28px, -28px) scale(0.7);
+      transform: translate(var(--close-x, 0), var(--close-y, -88px)) scale(0.7);
     }
 
     .visor-widget.open .visor-close {
       opacity: 1;
       pointer-events: auto;
-      transform: translate(-34px, -34px) scale(1);
+      transform: translate(var(--close-x, 0), var(--close-y, -88px)) scale(1);
     }
 
     .visor-widget.open .visor-actions:hover .visor-action {
@@ -239,7 +239,7 @@ export async function mountVisorWidget(): Promise<void> {
   closeButton.type = 'button';
   closeButton.title = 'Hide Visor widget';
   closeButton.setAttribute('aria-label', 'Hide Visor widget');
-  closeButton.textContent = '×';
+  closeButton.textContent = 'x';
   closeButton.addEventListener('click', async (event) => {
     event.stopPropagation();
     const current = await chrome.storage.local.get(['settings']);
@@ -265,6 +265,9 @@ export async function mountVisorWidget(): Promise<void> {
     const rect = wrapper.getBoundingClientRect();
     const horizontalSign = rect.left < 76 ? -1 : 1;
     const verticalSign = rect.top < 76 ? -1 : 1;
+
+    closeButton.style.setProperty('--close-x', '0px');
+    closeButton.style.setProperty('--close-y', `${-88 * verticalSign}px`);
 
     actionButtons.forEach((button, provider) => {
       const [baseX, baseY] = radialPositions[provider];

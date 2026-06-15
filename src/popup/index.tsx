@@ -271,8 +271,7 @@ function Popup() {
         </div>
       </div>
 
-      <label
-        htmlFor="visorWidgetToggle"
+      <div
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -281,8 +280,7 @@ function Popup() {
           padding: '10px 12px',
           border: '1px solid var(--border-color)',
           borderRadius: '12px',
-          background: 'var(--bg-card)',
-          cursor: 'pointer'
+          background: 'var(--bg-card)'
         }}
       >
         <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -291,14 +289,36 @@ function Popup() {
             {widgetEnabled ? 'Visible on this page' : 'Hidden until relaunched'}
           </span>
         </span>
-        <input
+        <button
           id="visorWidgetToggle"
-          type="checkbox"
-          checked={widgetEnabled}
-          onChange={(event) => handleWidgetToggle(event.target.checked)}
-          style={{ width: '18px', height: '18px' }}
-        />
-      </label>
+          type="button"
+          role="switch"
+          aria-checked={widgetEnabled}
+          aria-label="Toggle floating widget"
+          onClick={() => handleWidgetToggle(!widgetEnabled)}
+          style={{
+            width: '46px',
+            height: '26px',
+            padding: '3px',
+            borderRadius: '999px',
+            border: `1px solid ${widgetEnabled ? 'rgba(30, 215, 96, 0.82)' : 'var(--border-color)'}`,
+            background: widgetEnabled ? 'var(--primary)' : 'var(--bg-elevated)',
+            justifyContent: widgetEnabled ? 'flex-end' : 'flex-start',
+            boxShadow: widgetEnabled ? '0 0 16px rgba(30, 215, 96, 0.24)' : 'none'
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: '18px',
+              height: '18px',
+              borderRadius: '999px',
+              background: widgetEnabled ? '#001409' : 'var(--text-muted)',
+              display: 'block'
+            }}
+          />
+        </button>
+      </div>
 
       {/* Compiler Configurations Panel */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
