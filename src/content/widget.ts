@@ -85,6 +85,7 @@ function createStyle(): HTMLStyleElement {
       place-items: center;
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 0 18px rgba(30, 215, 96, 0.14);
       transition: transform 180ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+      transform-origin: center;
     }
 
     .visor-main {
@@ -123,17 +124,28 @@ function createStyle(): HTMLStyleElement {
     }
 
     .visor-action {
-      width: 38px;
-      height: 38px;
-      left: 4px;
-      top: 4px;
+      width: 34px;
+      height: 34px;
+      left: 6px;
+      top: 6px;
       background: rgba(4, 10, 8, 0.56);
       backdrop-filter: blur(8px);
       transform: translate(0, 0) scale(0.72);
     }
 
     .visor-widget.open .visor-action {
-      transform: translate(var(--x), var(--y)) scale(1);
+      transform: translate(var(--x), var(--y)) scale(0.92);
+    }
+
+    .visor-widget.open .visor-actions:hover .visor-action {
+      transform: translate(calc(var(--x) * 0.82), calc(var(--y) * 0.82)) scale(0.74);
+      opacity: 0.78;
+    }
+
+    .visor-widget.open .visor-actions:hover .visor-action:hover {
+      transform: translate(calc(var(--x) * 0.92), calc(var(--y) * 0.92)) scale(1.18);
+      opacity: 1;
+      z-index: 2;
     }
 
     .visor-action img {
@@ -187,10 +199,10 @@ export async function mountVisorWidget(): Promise<void> {
   actions.className = 'visor-actions';
 
   const radialPositions: Record<AgentProvider, [number, number]> = {
-    chatgpt: [-46, -4],
-    grok: [-38, -46],
-    gemini: [2, -66],
-    claude: [42, -46]
+    chatgpt: [-40, -2],
+    grok: [-34, -38],
+    gemini: [0, -54],
+    claude: [34, -38]
   };
 
   (Object.keys(providerLabels) as AgentProvider[]).forEach((provider) => {
