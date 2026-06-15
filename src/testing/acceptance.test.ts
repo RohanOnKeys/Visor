@@ -28,7 +28,7 @@ describe('Acceptance fixtures', () => {
       expect(AgentContextSchema.safeParse(result.context).success).toBe(true);
       expect(() => JSON.parse(result.exports.json)).not.toThrow();
       expect(result.exports.markdown.length).toBeGreaterThan(0);
-      expect(result.exports.promptBlock).toContain('UNTRUSTED WEB CONTENT START');
+      expect(result.exports.promptBlock).toContain('Source URL:');
       expect(result.context.tokenProfile.compiledEstimatedTokens).toBeGreaterThanOrEqual(0);
     });
   });

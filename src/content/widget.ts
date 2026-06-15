@@ -65,10 +65,10 @@ function createStyle(): HTMLStyleElement {
 
     .visor-widget {
       position: fixed;
-      right: 22px;
-      bottom: 24px;
-      width: 64px;
-      height: 64px;
+      right: 18px;
+      bottom: 18px;
+      width: 46px;
+      height: 46px;
       z-index: 2147483647;
       pointer-events: auto;
     }
@@ -83,24 +83,26 @@ function createStyle(): HTMLStyleElement {
       cursor: pointer;
       display: grid;
       place-items: center;
-      background: radial-gradient(circle at 35% 28%, rgba(30, 215, 96, 0.24), rgba(0, 0, 0, 0.95) 62%);
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(30, 215, 96, 0.16), 0 0 28px rgba(30, 215, 96, 0.22);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 0 18px rgba(30, 215, 96, 0.14);
       transition: transform 180ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
     }
 
     .visor-main {
       inset: 0;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
     }
 
     .visor-main:hover,
     .visor-action:hover {
       border-color: rgba(30, 215, 96, 0.88);
-      box-shadow: 0 20px 52px rgba(0, 0, 0, 0.56), 0 0 34px rgba(30, 215, 96, 0.32);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36), 0 0 22px rgba(30, 215, 96, 0.22);
     }
 
     .visor-main img {
-      width: 48px;
-      height: 48px;
+      width: 42px;
+      height: 42px;
       border-radius: 999px;
       object-fit: cover;
       filter: saturate(1.18) contrast(1.06);
@@ -121,10 +123,12 @@ function createStyle(): HTMLStyleElement {
     }
 
     .visor-action {
-      width: 54px;
-      height: 54px;
-      left: 5px;
-      top: 5px;
+      width: 38px;
+      height: 38px;
+      left: 4px;
+      top: 4px;
+      background: rgba(4, 10, 8, 0.56);
+      backdrop-filter: blur(8px);
       transform: translate(0, 0) scale(0.72);
     }
 
@@ -183,10 +187,10 @@ export async function mountVisorWidget(): Promise<void> {
   actions.className = 'visor-actions';
 
   const radialPositions: Record<AgentProvider, [number, number]> = {
-    chatgpt: [-66, -12],
-    grok: [-52, -76],
-    gemini: [12, -108],
-    claude: [76, -76]
+    chatgpt: [-46, -4],
+    grok: [-38, -46],
+    gemini: [2, -66],
+    claude: [42, -46]
   };
 
   (Object.keys(providerLabels) as AgentProvider[]).forEach((provider) => {

@@ -213,7 +213,14 @@ function Options() {
       {/* Title Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
         <div>
-          <h1 className="title-gradient" style={{ fontSize: '28px' }}>Visor Control Panel</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img
+              src={chrome.runtime.getURL('visor-logo.png')}
+              alt="Visor"
+              style={{ width: '52px', height: '52px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+            />
+            <h1 className="title-gradient" style={{ fontSize: '28px' }}>Control Panel</h1>
+          </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
             Configure compiler heuristics, defaults, site selectors, and privacy redactions.
           </p>

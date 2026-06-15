@@ -103,7 +103,12 @@ function Preview() {
   if (!data) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
-        <h1 className="title-gradient" style={{ fontSize: '32px' }}>Visor Dashboard</h1>
+        <img
+          src={chrome.runtime.getURL('visor-logo.png')}
+          alt="Visor"
+          style={{ width: '72px', height: '72px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+        />
+        <h1 className="title-gradient" style={{ fontSize: '32px' }}>Dashboard</h1>
         <p style={{ color: 'var(--text-secondary)' }}>No compiled page snapshot found in local memory.</p>
         <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Open the extension popup on a web page and click "Compile Page" to inspect context.</p>
       </div>
@@ -118,9 +123,11 @@ function Preview() {
       {/* Header Info Panel */}
       <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <span style={{ fontSize: '11px', color: 'var(--secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Visor Compiler Output Preview
-          </span>
+          <img
+            src={chrome.runtime.getURL('visor-logo.png')}
+            alt="Visor"
+            style={{ width: '42px', height: '42px', borderRadius: '999px', objectFit: 'cover', display: 'block', marginBottom: '8px' }}
+          />
           <h1 style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px' }}>{context.source.title}</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '13px', marginTop: '2px' }}>
             {context.source.url}

@@ -203,7 +203,11 @@ function Popup() {
     <div style={{ width: '420px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }} className="glass-panel">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="title-gradient" style={{ fontSize: '20px', letterSpacing: '-0.02em' }}>VISOR</h1>
+        <img
+          src={chrome.runtime.getURL('visor-logo.png')}
+          alt="Visor"
+          style={{ width: '44px', height: '44px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+        />
         <button 
           onClick={handleOpenSettings} 
           className="btn-secondary" 

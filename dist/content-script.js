@@ -16,10 +16,10 @@ function st(e){const r=e.tagName.toLowerCase();if(["input","select","textarea","
 
     .visor-widget {
       position: fixed;
-      right: 22px;
-      bottom: 24px;
-      width: 64px;
-      height: 64px;
+      right: 18px;
+      bottom: 18px;
+      width: 46px;
+      height: 46px;
       z-index: 2147483647;
       pointer-events: auto;
     }
@@ -34,24 +34,26 @@ function st(e){const r=e.tagName.toLowerCase();if(["input","select","textarea","
       cursor: pointer;
       display: grid;
       place-items: center;
-      background: radial-gradient(circle at 35% 28%, rgba(30, 215, 96, 0.24), rgba(0, 0, 0, 0.95) 62%);
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(30, 215, 96, 0.16), 0 0 28px rgba(30, 215, 96, 0.22);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 0 18px rgba(30, 215, 96, 0.14);
       transition: transform 180ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
     }
 
     .visor-main {
       inset: 0;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
     }
 
     .visor-main:hover,
     .visor-action:hover {
       border-color: rgba(30, 215, 96, 0.88);
-      box-shadow: 0 20px 52px rgba(0, 0, 0, 0.56), 0 0 34px rgba(30, 215, 96, 0.32);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36), 0 0 22px rgba(30, 215, 96, 0.22);
     }
 
     .visor-main img {
-      width: 48px;
-      height: 48px;
+      width: 42px;
+      height: 42px;
       border-radius: 999px;
       object-fit: cover;
       filter: saturate(1.18) contrast(1.06);
@@ -72,10 +74,12 @@ function st(e){const r=e.tagName.toLowerCase();if(["input","select","textarea","
     }
 
     .visor-action {
-      width: 54px;
-      height: 54px;
-      left: 5px;
-      top: 5px;
+      width: 38px;
+      height: 38px;
+      left: 4px;
+      top: 4px;
+      background: rgba(4, 10, 8, 0.56);
+      backdrop-filter: blur(8px);
       transform: translate(0, 0) scale(0.72);
     }
 
@@ -96,4 +100,4 @@ function st(e){const r=e.tagName.toLowerCase();if(["input","select","textarea","
       cursor: wait;
       opacity: 0.62;
     }
-  `,e}async function Wt(){if(!Ht())return;document.documentElement.dataset.visorWidgetMounted="true";const r=(await chrome.storage.local.get(["settings"])).settings||{},i={open:!1,mode:r.defaultMode||"agent_action",privacyLevel:r.privacyLevel||"medium",tokenBudget:r.tokenBudget||4e3},s=document.createElement("div");s.id="visor-floating-widget-root";const p=s.attachShadow({mode:"open"}),g=document.createElement("div");g.className="visor-widget";const w=document.createElement("button");w.className="visor-main",w.type="button",w.title="Open Visor agent export widget",w.setAttribute("aria-label","Open Visor agent export widget");const $=document.createElement("img");$.src=chrome.runtime.getURL("visor-logo.png"),$.alt="",w.appendChild($);const k=document.createElement("div");k.className="visor-actions";const C={chatgpt:[-66,-12],grok:[-52,-76],gemini:[12,-108],claude:[76,-76]};Object.keys(Z).forEach(x=>{const E=document.createElement("button");E.className="visor-action",E.type="button",E.title=`Dump current page context to ${Z[x]}`,E.setAttribute("aria-label",`Dump current page context to ${Z[x]}`),E.style.setProperty("--x",`${C[x][0]}px`),E.style.setProperty("--y",`${C[x][1]}px`);const m=document.createElement("img");m.src=chrome.runtime.getURL(Rt[x]),m.alt="",E.appendChild(m),E.addEventListener("click",async W=>{W.stopPropagation(),i.exporting=x,h();const _=await jt(x,{mode:i.mode,privacyLevel:i.privacyLevel,tokenBudget:i.tokenBudget});i.exporting=void 0,E.title=_.ok?`Opened ${Z[x]}`:_.userMessage||"Export failed",h()}),k.appendChild(E)});function h(){g.classList.toggle("open",i.open),k.querySelectorAll(".visor-action").forEach(x=>{x.disabled=!!i.exporting})}w.addEventListener("click",x=>{x.stopPropagation(),i.open=!i.open,h()}),document.addEventListener("keydown",x=>{x.key==="Escape"&&i.open&&(i.open=!1,h())}),p.append(Vt(),g),g.append(k,w),h();const L=()=>{document.body.contains(s)||document.body.appendChild(s)};document.body?L():window.addEventListener("DOMContentLoaded",L,{once:!0})}Bt();Wt();chrome.runtime.onMessage.addListener((e,r,i)=>{if(e.type==="VISOR_EXTRACT_DOM")try{const s=e.payload.settings,p=kt(s);i({ok:!0,snapshot:p})}catch(s){console.error("Visor content script extraction failed:",s),i({ok:!1,error:s.message||s})}return!0});console.log("Visor Content Script Active");
+  `,e}async function Wt(){if(!Ht())return;document.documentElement.dataset.visorWidgetMounted="true";const r=(await chrome.storage.local.get(["settings"])).settings||{},i={open:!1,mode:r.defaultMode||"agent_action",privacyLevel:r.privacyLevel||"medium",tokenBudget:r.tokenBudget||4e3},s=document.createElement("div");s.id="visor-floating-widget-root";const p=s.attachShadow({mode:"open"}),g=document.createElement("div");g.className="visor-widget";const w=document.createElement("button");w.className="visor-main",w.type="button",w.title="Open Visor agent export widget",w.setAttribute("aria-label","Open Visor agent export widget");const $=document.createElement("img");$.src=chrome.runtime.getURL("visor-logo.png"),$.alt="",w.appendChild($);const k=document.createElement("div");k.className="visor-actions";const C={chatgpt:[-46,-4],grok:[-38,-46],gemini:[2,-66],claude:[42,-46]};Object.keys(Z).forEach(x=>{const E=document.createElement("button");E.className="visor-action",E.type="button",E.title=`Dump current page context to ${Z[x]}`,E.setAttribute("aria-label",`Dump current page context to ${Z[x]}`),E.style.setProperty("--x",`${C[x][0]}px`),E.style.setProperty("--y",`${C[x][1]}px`);const m=document.createElement("img");m.src=chrome.runtime.getURL(Rt[x]),m.alt="",E.appendChild(m),E.addEventListener("click",async W=>{W.stopPropagation(),i.exporting=x,h();const _=await jt(x,{mode:i.mode,privacyLevel:i.privacyLevel,tokenBudget:i.tokenBudget});i.exporting=void 0,E.title=_.ok?`Opened ${Z[x]}`:_.userMessage||"Export failed",h()}),k.appendChild(E)});function h(){g.classList.toggle("open",i.open),k.querySelectorAll(".visor-action").forEach(x=>{x.disabled=!!i.exporting})}w.addEventListener("click",x=>{x.stopPropagation(),i.open=!i.open,h()}),document.addEventListener("keydown",x=>{x.key==="Escape"&&i.open&&(i.open=!1,h())}),p.append(Vt(),g),g.append(k,w),h();const L=()=>{document.body.contains(s)||document.body.appendChild(s)};document.body?L():window.addEventListener("DOMContentLoaded",L,{once:!0})}Bt();Wt();chrome.runtime.onMessage.addListener((e,r,i)=>{if(e.type==="VISOR_EXTRACT_DOM")try{const s=e.payload.settings,p=kt(s);i({ok:!0,snapshot:p})}catch(s){console.error("Visor content script extraction failed:",s),i({ok:!1,error:s.message||s})}return!0});console.log("Visor Content Script Active");
