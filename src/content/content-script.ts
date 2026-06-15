@@ -1,7 +1,9 @@
 import { extractPageSnapshot } from './extractor';
 import { injectPendingAgentExport } from './agentExport';
+import { mountVisorWidget } from './widget';
 
 void injectPendingAgentExport();
+void mountVisorWidget();
 
 // Listen for the extraction message from the service worker
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

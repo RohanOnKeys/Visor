@@ -1,4 +1,4 @@
-import { CompileRequest, CompileResponse, PageSnapshot } from '../shared/types';
+import { AgentProvider, CompileRequest, CompileResponse, PageSnapshot, PendingAgentExport } from '../shared/types';
 import { compileSnapshot } from '../compiler/compiler';
 import { loadSettings, loadSiteProfiles, saveRecentCompile } from '../storage/settings';
 import { PageSnapshotSchema } from '../shared/schema';
@@ -12,12 +12,22 @@ type CompileTabOptions = {
 const autoCompileTimers = new Map<number, number>();
 const autoCompileInFlight = new Set<number>();
 const autoCompileDelayMs = 900;
+const providerUrls: Record<AgentProvider, string> = {
+  chatgpt: 'https://chatgpt.com/',
+  grok: 'https://grok.com/',
+  gemini: 'https://gemini.google.com/app',
+  claude: 'https://claude.ai/new'
+};
 
 // Listen for messages from the Popup or Options page
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'VISOR_COMPILE_ACTIVE_TAB') {
     handleCompileActiveTab(message.payload, sendResponse);
     return true; // Keep message channel open for async response
+  }
+  if (message.type === 'VISOR_EXPORT_ACTIVE_TAB_TO_AGENT') {
+    handleExportActiveTabToAgent(message.payload.provider, message.payload.request, sendResponse);
+    return true;
   }
   if (message.type === 'VISOR_AUTH_GET_SESSION') {
     getStoredAuthSession()
@@ -88,6 +98,49 @@ async function handleCompileActiveTab(
       userMessage: 'An unexpected compiler error occurred. Please try again.',
       debug: error.message || error
     });
+  }
+}
+
+async function handleExportActiveTabToAgent(
+  provider: AgentProvider,
+  request: CompileRequest,
+  sendResponse: (response: { ok: boolean; userMessage?: string }) => void
+) {
+  try {
+    if (!providerUrls[provider]) {
+      sendResponse({ ok: false, userMessage: 'Unknown agent provider.' });
+      return;
+    }
+
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!activeTab?.id || !activeTab.url) {
+      sendResponse({ ok: false, userMessage: 'No active tab found.' });
+      return;
+    }
+
+    const response = await compileTab(activeTab.id, activeTab.url, request, {
+      saveRecent: true,
+      updateBadge: true
+    });
+
+    if (!response.ok) {
+      sendResponse({ ok: false, userMessage: response.userMessage });
+      return;
+    }
+
+    const pendingExport: PendingAgentExport = {
+      provider,
+      text: response.exports.promptBlock,
+      createdAt: new Date().toISOString(),
+      sourceTitle: response.context.source.title,
+      sourceUrl: response.context.source.url
+    };
+
+    await chrome.storage.local.set({ pendingAgentExport: pendingExport });
+    await chrome.tabs.create({ url: providerUrls[provider] });
+    sendResponse({ ok: true });
+  } catch (error: any) {
+    sendResponse({ ok: false, userMessage: error.message || 'Agent export failed.' });
   }
 }
 

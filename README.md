@@ -9,6 +9,7 @@ Visor is a Chrome MV3 extension that compiles the current webpage into structure
 - Agent-ready JSON, Markdown, and delimited prompt-block exports
 - Export buttons for ChatGPT, Grok, Gemini, and Claude with automatic prompt injection
 - Always-on active-tab monitoring that refreshes context while you browse
+- Floating in-page Visor logo widget with circular LLM export buttons
 - Agent Mode, RAG chunks, detailed mode, compact mode, and debug mode
 - Local privacy redaction and blocked-domain settings
 - Google OAuth sign-in through Chrome Identity
@@ -38,7 +39,7 @@ For normal use, no npm command is required. The repository includes a ready-to-l
 3. Click Load unpacked.
 4. Select the `dist` folder.
 
-After the extension is loaded, Visor stays active while browsing and keeps the current tab context updated automatically. Use the popup only when you want to inspect, copy, export, or refresh manually.
+After the extension is loaded, Visor stays active while browsing and keeps the current tab context updated automatically. A circular Visor logo widget floats on supported pages; click it to choose an LLM and dump the current page context directly using the widget settings. Use the popup when you want to inspect, copy, export, or refresh manually.
 
 ## Google OAuth Setup
 
