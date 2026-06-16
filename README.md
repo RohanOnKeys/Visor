@@ -1,4 +1,4 @@
-![Visor DOM-to-Agent Context Compiler](docs/assets/visor-readme-banner.svg)
+![Visor DOM-to-Agent Context Compiler](docs/assets/visor.banner.png)
 
 # Visor DOM Context Compiler
 
