@@ -279,8 +279,30 @@ export const CompilerNoteSchema = z.object({
   message: z.string()
 });
 
+export const AgentContextSchemaVersionSchema = z.enum([
+  'agent_context.compact.v1',
+  'agent_context.detailed.v1',
+  'agent_context.agent_action.v1',
+  'agent_context.rag.v1',
+  'agent_context.debug.v1'
+]);
+
+export const CompileModeSchema = z.enum(['compact', 'detailed', 'agent_action', 'rag', 'debug']);
+
+export const ModeProfileSchema = z.object({
+  mode: CompileModeSchema,
+  schemaVersion: AgentContextSchemaVersionSchema,
+  objective: z.string(),
+  includedSections: z.array(z.string()),
+  omittedSections: z.array(z.string()),
+  tokenTarget: z.number().int(),
+  tokenTolerance: z.number().int()
+});
+
 export const AgentContextSchema = z.object({
-  schemaVersion: z.literal('agent_context.v1'),
+  schemaVersion: AgentContextSchemaVersionSchema,
+  compileMode: CompileModeSchema,
+  modeProfile: ModeProfileSchema,
   source: SourceInfoSchema,
   pageClassification: PageClassificationSchema,
   summary: ContextSummarySchema,

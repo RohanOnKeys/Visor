@@ -24,6 +24,7 @@ type WidgetState = {
 };
 
 let mountedHost: HTMLDivElement | undefined;
+let applyMountedWidgetSettings: ((settings: Partial<UserSettings>) => void) | undefined;
 
 function getSessionStorageArea(): chrome.storage.StorageArea | undefined {
   return (chrome.storage as any).session as chrome.storage.StorageArea | undefined;
@@ -252,7 +253,12 @@ function createStyle(): HTMLStyleElement {
 export async function unmountVisorWidget(): Promise<void> {
   mountedHost?.remove();
   mountedHost = undefined;
+  applyMountedWidgetSettings = undefined;
   delete document.documentElement.dataset.visorWidgetMounted;
+}
+
+export async function updateVisorWidgetSettings(settings: Partial<UserSettings>): Promise<void> {
+  applyMountedWidgetSettings?.(settings);
 }
 
 export async function mountVisorWidget(): Promise<void> {
@@ -266,6 +272,18 @@ export async function mountVisorWidget(): Promise<void> {
     mode: savedSettings.defaultMode || 'agent_action',
     privacyLevel: savedSettings.privacyLevel || 'medium',
     tokenBudget: savedSettings.tokenBudget || 4000
+  };
+
+  applyMountedWidgetSettings = (settings) => {
+    if (settings.defaultMode) {
+      state.mode = settings.defaultMode;
+    }
+    if (settings.privacyLevel) {
+      state.privacyLevel = settings.privacyLevel;
+    }
+    if (typeof settings.tokenBudget === 'number') {
+      state.tokenBudget = settings.tokenBudget;
+    }
   };
 
   const host = document.createElement('div');

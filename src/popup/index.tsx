@@ -121,6 +121,7 @@ function Popup() {
   const [compileResult, setCompileResult] = useState<CompileResponse | null>(null);
   const [lastAutoCompiledAt, setLastAutoCompiledAt] = useState<string>('');
   const [widgetEnabled, setWidgetEnabled] = useState<boolean>(true);
+  const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
 
   // Initialize popup states from storage settings and tab info
   useEffect(() => {
@@ -148,6 +149,7 @@ function Popup() {
       setPrivacyLevel(settings.privacyLevel);
       setTokenBudget(settings.tokenBudget);
       setWidgetEnabled(settings.widgetEnabled);
+      setSettingsLoaded(true);
 
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.get(['lastCompileResult', 'lastAutoCompiledAt'], (result) => {
@@ -166,7 +168,50 @@ function Popup() {
     init();
   }, []);
 
+  const updateCurrentTabWidgetSettings = async (settings: Partial<{
+    defaultMode: CompileRequest['mode'];
+    privacyLevel: CompileRequest['privacyLevel'];
+    tokenBudget: number;
+  }>) => {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return;
+
+    chrome.tabs.sendMessage(tab.id, { type: 'VISOR_WIDGET_UPDATE_SETTINGS', payload: { settings } }, () => {
+      void chrome.runtime.lastError;
+    });
+  };
+
+  const persistCompilerPreferences = async (nextPreferences: Partial<{
+    defaultMode: CompileRequest['mode'];
+    privacyLevel: CompileRequest['privacyLevel'];
+    tokenBudget: number;
+  }>) => {
+    if (!settingsLoaded) return;
+    const settings = await loadSettings();
+    const updated = { ...settings, ...nextPreferences };
+    await saveSettings(updated);
+    await updateCurrentTabWidgetSettings(nextPreferences);
+  };
+
+  const handleModeChange = (nextMode: CompileRequest['mode']) => {
+    setMode(nextMode);
+    void persistCompilerPreferences({ defaultMode: nextMode, privacyLevel, tokenBudget });
+  };
+
+  const handlePrivacyLevelChange = (nextPrivacyLevel: CompileRequest['privacyLevel']) => {
+    setPrivacyLevel(nextPrivacyLevel);
+    void persistCompilerPreferences({ defaultMode: mode, privacyLevel: nextPrivacyLevel, tokenBudget });
+  };
+
+  const handleTokenBudgetChange = (nextTokenBudget: number) => {
+    setTokenBudget(nextTokenBudget);
+    void persistCompilerPreferences({ defaultMode: mode, privacyLevel, tokenBudget: nextTokenBudget });
+  };
+
   const handleCompile = () => {
+    void persistCompilerPreferences({ defaultMode: mode, privacyLevel, tokenBudget });
     setStatus('compiling');
     setErrorMessage('');
     setCompileResult(null);
@@ -393,7 +438,7 @@ function Popup() {
           <GreenSelect
             value={mode}
             options={modeOptions}
-            onChange={setMode}
+            onChange={handleModeChange}
             ariaLabel="Select compiler mode"
           />
         </div>
@@ -403,7 +448,7 @@ function Popup() {
           <GreenSelect
             value={privacyLevel}
             options={privacyOptions}
-            onChange={setPrivacyLevel}
+            onChange={handlePrivacyLevelChange}
             ariaLabel="Select privacy level"
           />
         </div>
@@ -413,7 +458,7 @@ function Popup() {
         <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Token Budget</label>
         <NumberStepper
           value={tokenBudget}
-          onChange={setTokenBudget}
+          onChange={handleTokenBudgetChange}
           ariaLabel="Token budget"
         />
       </div>

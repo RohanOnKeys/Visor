@@ -235,10 +235,21 @@ export function compileSnapshot(
   let filteredBlocks = candidateBlocks;
   
   if (request.mode === 'compact') {
-    // Keeps blocks with high importance scores (>= 4.0) or heading elements
     filteredBlocks = candidateBlocks.filter(
-      (b) => b.kind === 'heading' || b.importanceScore >= 5.0
+      (b) => b.kind === 'heading' || b.importanceScore >= 7.0
     );
+    compilerNotes.push({
+      level: 'info',
+      category: 'filtering',
+      message: `Compact mode kept ${filteredBlocks.length} high-signal summary blocks and removed lower-priority detail.`
+    });
+  } else if (request.mode === 'detailed') {
+    filteredBlocks = candidateBlocks.filter((b) => b.importanceScore >= 2.0 || b.kind === 'heading' || b.kind === 'code');
+    compilerNotes.push({
+      level: 'info',
+      category: 'filtering',
+      message: `Detailed mode kept ${filteredBlocks.length} readable content blocks while removing only obvious noise.`
+    });
   } else if (request.mode === 'agent_action') {
     const actionContextTerms = /error|warning|required|invalid|success|saved|failed|complete|continue|next|submit|login|sign in|checkout|cart|search/i;
     filteredBlocks = candidateBlocks.filter(
@@ -266,7 +277,7 @@ export function compileSnapshot(
     compilerNotes.push({
       level: 'info',
       category: 'filtering',
-      message: 'Debug mode retained low-score/noise candidates so the preview can inspect compiler decisions.'
+      message: 'Debug mode retained low-score/noise candidates and still applies the requested token budget.'
     });
   }
 
@@ -277,22 +288,10 @@ export function compileSnapshot(
   });
 
   // 6. Token Budget Pruning
-  const requestedBudget = request.tokenBudget;
-  const effectiveBudget = request.mode === 'debug'
-    ? Math.max(request.tokenBudget, redactedBlocks.reduce((sum, block) => sum + block.tokenEstimate, 0))
-    : request.tokenBudget;
-
-  if (effectiveBudget !== requestedBudget) {
-    compilerNotes.push({
-      level: 'info',
-      category: 'budgeting',
-      message: `Debug mode expanded the effective budget from ${requestedBudget} to ${effectiveBudget} tokens to avoid hiding diagnostic blocks.`
-    });
-  }
-
   const { budgetedBlocks, profile, compilerNotes: budgetNotes } = applyTokenBudget(
     redactedBlocks,
-    effectiveBudget
+    request.tokenBudget,
+    100
   );
 
   budgetNotes.forEach((n) => {
@@ -393,7 +392,9 @@ export function compileSnapshot(
 
   // Compile final AgentContext object
   const context: AgentContext = {
-    schemaVersion: 'agent_context.v1',
+    schemaVersion: getModeSchemaVersion(request.mode),
+    compileMode: request.mode,
+    modeProfile: createModeProfile(request),
     source: {
       url: normalizedUrl,
       canonicalUrl: snapshot.source.canonicalUrl,
@@ -437,6 +438,48 @@ export function compileSnapshot(
       markdown: markdownExport,
       promptBlock: promptBlockExport
     }
+  };
+}
+
+function getModeSchemaVersion(mode: CompileRequest['mode']): AgentContext['schemaVersion'] {
+  return `agent_context.${mode}.v1` as AgentContext['schemaVersion'];
+}
+
+function createModeProfile(request: CompileRequest): AgentContext['modeProfile'] {
+  const profiles: Record<CompileRequest['mode'], Omit<AgentContext['modeProfile'], 'mode' | 'schemaVersion' | 'tokenTarget' | 'tokenTolerance'>> = {
+    compact: {
+      objective: 'Small high-signal page brief for fast agent grounding.',
+      includedSections: ['source', 'classification', 'summary', 'top headings', 'highest-score content', 'key data', 'limited links/media/actions'],
+      omittedSections: ['low-score paragraphs', 'most forms', 'large tables', 'diagnostic noise']
+    },
+    detailed: {
+      objective: 'Full semantic page reading with layout, media, tables, forms, links, and selector traceability.',
+      includedSections: ['source', 'classification', 'hierarchy', 'content', 'layout groups', 'data', 'links', 'forms', 'tables', 'media', 'actions'],
+      omittedSections: ['deduplicated repeats', 'obvious cookie/ad/navigation noise']
+    },
+    agent_action: {
+      objective: 'Operational context for agents that need to understand controls, forms, state text, and next actions.',
+      includedSections: ['actions', 'forms', 'selectors', 'status/error text', 'nearby action groups', 'limited data/media/tables'],
+      omittedSections: ['reference-heavy prose', 'non-action decorative media', 'low-score article body text']
+    },
+    rag: {
+      objective: 'Retrieval-ready chunk schema with stable chunk IDs, heading paths, selector hints, and low interaction noise.',
+      includedSections: ['chunks', 'heading paths', 'source metadata', 'reference links', 'data elements', 'tables', 'captioned media'],
+      omittedSections: ['forms', 'buttons', 'transient controls', 'debug notes as primary content']
+    },
+    debug: {
+      objective: 'Compiler inspection schema that exposes noisy, duplicate, low-score, and diagnostic content under the token budget.',
+      includedSections: ['all candidate content classes', 'compiler notes', 'privacy report', 'selector hints', 'structured arrays'],
+      omittedSections: ['nothing intentionally before token budgeting']
+    }
+  };
+
+  return {
+    mode: request.mode,
+    schemaVersion: getModeSchemaVersion(request.mode),
+    tokenTarget: request.tokenBudget,
+    tokenTolerance: 100,
+    ...profiles[request.mode]
   };
 }
 

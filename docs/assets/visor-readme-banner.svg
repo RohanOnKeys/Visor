@@ -1,0 +1,40 @@
+<svg width="1280" height="420" viewBox="0 0 1280 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Visor DOM Context Compiler</title>
+  <desc id="desc">Green Visor themed webbing banner on a dark background.</desc>
+  <rect width="1280" height="420" fill="#020403"/>
+  <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(640 210) rotate(90) scale(280 620)">
+    <stop stop-color="#1ED760" stop-opacity="0.34"/>
+    <stop offset="1" stop-color="#1ED760" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1280" height="420" fill="url(#glow)"/>
+  <g opacity="0.24" stroke="#1ED760" stroke-width="2">
+    <path d="M-40 66C126 112 254 98 386 54C536 4 731 11 890 74C1027 128 1146 126 1320 72"/>
+    <path d="M-30 176C130 143 271 156 416 208C558 259 699 274 842 220C1012 156 1130 158 1310 206"/>
+    <path d="M-20 318C132 254 279 248 430 294C595 344 747 353 906 282C1056 215 1164 230 1300 292"/>
+    <path d="M98 -20L242 432"/>
+    <path d="M294 -20L418 432"/>
+    <path d="M516 -20L574 432"/>
+    <path d="M738 -20L704 432"/>
+    <path d="M956 -20L842 432"/>
+    <path d="M1168 -20L994 432"/>
+  </g>
+  <g opacity="0.52" stroke="#1ED760" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M292 132L506 196L556 250L633 251L686 196L988 132L922 290L804 342L690 252L641 252L589 252L476 342L358 290L292 132Z"/>
+    <path d="M354 164L464 199L414 250L332 222L354 164Z"/>
+    <path d="M486 205L555 224L514 286L450 269L486 205Z"/>
+    <path d="M714 205L818 177L838 237L759 286L714 205Z"/>
+    <path d="M842 172L926 152L898 221L828 238L842 172Z"/>
+    <path d="M592 225L640 225L619 269L592 269L572 225Z"/>
+    <path d="M376 257L474 287L447 325L384 296L376 257Z"/>
+    <path d="M824 287L902 257L896 296L833 325L824 287Z"/>
+  </g>
+  <g filter="url(#softShadow)">
+    <text x="640" y="88" text-anchor="middle" fill="#EFFFF4" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="50" font-weight="800" letter-spacing="0">Visor</text>
+    <text x="640" y="344" text-anchor="middle" fill="#B9FFD0" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" letter-spacing="0">DOM-to-Agent Context Compiler</text>
+  </g>
+  <defs>
+    <filter id="softShadow" x="0" y="0" width="1280" height="420" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#000000" flood-opacity="0.56"/>
+    </filter>
+  </defs>
+</svg>

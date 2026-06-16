@@ -63,6 +63,24 @@ function createSnapshot(overrides: Partial<PageSnapshot> = {}): PageSnapshot {
 }
 
 describe('Compiler modes', () => {
+  it('emits a distinct schema version and mode profile for every compile mode', () => {
+    const modes = ['compact', 'detailed', 'agent_action', 'rag', 'debug'] as const;
+
+    modes.forEach((mode) => {
+      const result = compileSnapshot(createSnapshot(), {
+        mode,
+        privacyLevel: 'medium',
+        tokenBudget: 4000
+      });
+
+      expect(result.context.schemaVersion).toBe(`agent_context.${mode}.v1`);
+      expect(result.context.compileMode).toBe(mode);
+      expect(result.context.modeProfile.mode).toBe(mode);
+      expect(result.context.modeProfile.tokenTolerance).toBe(100);
+      expect(result.context.modeProfile.includedSections.length).toBeGreaterThan(0);
+    });
+  });
+
   it('emits stable chunked content in RAG mode', () => {
     const result = compileSnapshot(createSnapshot(), {
       mode: 'rag',
@@ -80,7 +98,7 @@ describe('Compiler modes', () => {
     const result = compileSnapshot(createSnapshot(), {
       mode: 'debug',
       privacyLevel: 'medium',
-      tokenBudget: 1
+      tokenBudget: 4000
     });
 
     const blockIds = result.context.mainContent.map((block) => block.id);
@@ -88,8 +106,72 @@ describe('Compiler modes', () => {
     expect(blockIds).toContain('text-duplicate');
     expect(blockIds).toContain('noise-1');
     expect(result.context.compilerNotes.some((note) => note.message.includes('Debug mode retained duplicate blocks'))).toBe(true);
-    expect(result.context.compilerNotes.some((note) => note.message.includes('expanded the effective budget'))).toBe(true);
+    expect(result.context.compilerNotes.some((note) => note.message.includes('still applies the requested token budget'))).toBe(true);
+    expect(result.context.tokenProfile.compiledEstimatedTokens).toBeLessThanOrEqual(4000);
   });
+
+  it('clips filler content to land close to a pressured token budget when enough text exists', () => {
+    const result = compileSnapshot(createSnapshot(), {
+      mode: 'detailed',
+      privacyLevel: 'medium',
+      tokenBudget: 500
+    });
+
+    expect(result.context.tokenProfile.compiledEstimatedTokens).toBeLessThanOrEqual(500);
+    expect(result.context.tokenProfile.compiledEstimatedTokens).toBeGreaterThanOrEqual(400);
+    expect(result.context.compilerNotes.some((note) => note.message.includes('clipped block'))).toBe(true);
+  });
+
+  it('uses materially different structured schemas for compact, agent, rag, and debug modes', () => {
+    const structuredSnapshot = createSnapshot({
+      actions: [
+        {
+          id: 'action-submit',
+          type: 'button',
+          label: 'Continue checkout',
+          selectorHint: 'button.checkout',
+          textContext: 'Continue checkout',
+          sourceOrder: 5
+        }
+      ],
+      forms: [
+        {
+          id: 'form-checkout',
+          selectorHint: 'form.checkout',
+          purpose: 'checkout',
+          fields: [],
+          submitControls: [],
+          sourceOrder: 6
+        }
+      ],
+      layoutGroups: [
+        {
+          id: 'group-action',
+          label: 'Checkout',
+          role: 'card',
+          text: 'Continue checkout and submit payment.',
+          selectorHint: '.checkout-card',
+          sourceOrder: 11,
+          childActionIds: ['action-submit'],
+          childMediaIds: []
+        }
+      ]
+    });
+
+    const compact = compileSnapshot(structuredSnapshot, { mode: 'compact', privacyLevel: 'medium', tokenBudget: 4000 });
+    const agent = compileSnapshot(structuredSnapshot, { mode: 'agent_action', privacyLevel: 'medium', tokenBudget: 4000 });
+    const rag = compileSnapshot(structuredSnapshot, { mode: 'rag', privacyLevel: 'medium', tokenBudget: 4000 });
+    const debug = compileSnapshot(structuredSnapshot, { mode: 'debug', privacyLevel: 'medium', tokenBudget: 4000 });
+
+    expect(compact.context.forms.length).toBeLessThanOrEqual(4);
+    expect(agent.context.forms).toHaveLength(1);
+    expect(agent.context.actionableElements).toHaveLength(1);
+    expect(rag.context.forms).toHaveLength(0);
+    expect(rag.context.actionableElements).toHaveLength(0);
+    expect(debug.context.forms).toHaveLength(1);
+    expect(debug.context.actionableElements).toHaveLength(1);
+  });
+
 
   it('shapes structured arrays differently for RAG and Agent Mode', () => {
     const structuredSnapshot = createSnapshot({

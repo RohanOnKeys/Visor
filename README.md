@@ -1,6 +1,14 @@
+![Visor DOM-to-Agent Context Compiler](docs/assets/visor-readme-banner.svg)
+
 # Visor DOM Context Compiler
 
 Visor is a Chrome MV3 extension that compiles the current webpage into structured, privacy-aware context for AI agents.
+
+## Problem Statement
+
+AI agents usually see web pages as copied text, URLs, screenshots, or brittle selectors. That loses the real page structure: headings, forms, actions, tables, media, semantic regions, and the relationships between visible text and interactive elements.
+
+Visor turns a live browser tab into an agent-ready context package. It keeps useful DOM structure, applies local redaction, scores importance, traces selectors, and exports mode-specific schemas for reading, retrieval, debugging, and agent operation.
 
 ## Features
 
@@ -12,9 +20,57 @@ Visor is a Chrome MV3 extension that compiles the current webpage into structure
 - Floating in-page Visor logo widget with circular LLM export buttons
 - Agent Mode, RAG chunks, detailed mode, compact mode, and debug mode
 - Local privacy redaction and blocked-domain settings
-- Clean black and green extension UI
+- Session preferences for compile mode, privacy level, token budget, and widget state
+- Mode-specific JSON schemas with token targeting
 
-## Development
+## Install For Users
+
+No build command is required for normal use. The repository includes a ready-to-load `dist` build.
+
+1. Download or clone this repository.
+2. Open `chrome://extensions`.
+3. Enable Developer mode.
+4. Click Load unpacked.
+5. Select the `dist` folder from this repository.
+6. Pin Visor from the Chrome extensions menu.
+
+After loading it, Visor stays active while browsing and refreshes the active tab context automatically. The floating Visor widget appears on supported pages; click it to export the current page context directly into ChatGPT, Grok, Gemini, or Claude.
+
+## Compile Modes
+
+Visor exports a distinct schema for each mode:
+
+| Mode | Schema | Best for |
+| --- | --- | --- |
+| Compact Context | `agent_context.compact.v1` | Fast high-signal summaries and lightweight grounding |
+| Detailed Context | `agent_context.detailed.v1` | Full page reading with semantic regions, tables, media, links, and forms |
+| Agent Mode | `agent_context.agent_action.v1` | Agents that need controls, forms, status text, selectors, and next actions |
+| RAG Chunks | `agent_context.rag.v1` | Retrieval pipelines, chunk storage, vector ingestion, and citation-friendly context |
+| Compiler Debug | `agent_context.debug.v1` | Inspecting scoring, filtering, deduplication, noise, selectors, and compiler decisions |
+
+Token budgets are estimated locally. When there is enough extracted content, Visor trims and clips toward the requested token budget within roughly `+/-100` estimated tokens.
+
+## Export Targets
+
+- Copy JSON
+- Copy Markdown
+- Copy prompt block
+- Export directly to ChatGPT
+- Export directly to Grok
+- Export directly to Gemini
+- Export directly to Claude
+
+Direct exports open the selected agent and inject the compiled context into its prompt box. Clipboard copy is kept as a fallback.
+
+## Privacy And Safety
+
+- Redaction runs locally before export.
+- Password and one-time-code values are omitted.
+- Email, phone, token, API key, JWT, and credit-card-like patterns are masked according to privacy level.
+- Blocked domains can be configured from the extension options page.
+- Settings are stored locally/session-locally by Chrome storage APIs.
+
+## Development Setup
 
 ```bash
 npm install
@@ -23,23 +79,39 @@ npm test
 npm run build
 ```
 
-For extension development, run the watch build once and reload the extension after source changes:
+For extension development, run the watch build and reload the extension after source changes:
 
 ```bash
 npm run dev:extension
 ```
 
-## Load In Chrome
+## Developer Tools
 
-For normal use, no npm command is required. The repository includes a ready-to-load `dist` build.
+- `npm run typecheck` validates TypeScript.
+- `npm test` runs Vitest coverage for extraction, compiler modes, schemas, privacy, and extension guardrails.
+- `npm run build` creates the loadable extension in `dist`.
+- `npm run dev:extension` watches and rebuilds during extension development.
+- `preview.html` opens the full preview dashboard from the extension popup.
 
-1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Click Load unpacked.
-4. Select the `dist` folder.
+## Project Structure
 
-After the extension is loaded, Visor stays active while browsing and keeps the current tab context updated automatically. A circular Visor logo widget floats on supported pages; click it to choose an LLM and dump the current page context directly. Use the popup when you want to inspect, copy, export, refresh manually, or relaunch the widget.
+```txt
+src/
+  background/   service worker, active-tab compile flow, export routing
+  compiler/     classification, scoring, normalization, mode shaping, token budget
+  content/      DOM extractor, in-page widget, agent prompt injection
+  popup/        extension popup UI
+  options/      settings and site profile UI
+  privacy/      local redaction rules
+  shared/       schemas and TypeScript types
+dist/           committed Chrome extension build
+public/         icons, logos, and web-accessible assets
+```
 
 ## Repository Notes
 
 `node_modules/` is intentionally ignored. `dist/` is committed so non-developer users can load the extension directly from GitHub.
+
+## License
+
+MIT

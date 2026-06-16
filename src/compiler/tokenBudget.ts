@@ -1,5 +1,7 @@
 import { ContentBlock, TokenProfile } from '../shared/types';
 
+const TOKEN_TOLERANCE = 100;
+
 export function estimateTokenCount(text: string): number {
   if (!text) return 0;
   // Character count divided by 4 is the standard heuristic for English
@@ -8,7 +10,8 @@ export function estimateTokenCount(text: string): number {
 
 export function applyTokenBudget(
   blocks: ContentBlock[],
-  budget: number
+  budget: number,
+  tolerance = TOKEN_TOLERANCE
 ): {
   budgetedBlocks: ContentBlock[];
   profile: TokenProfile;
@@ -39,8 +42,8 @@ export function applyTokenBudget(
     };
   }
 
-  // 3. We are over budget - perform prioritized trimming
-  notes.push(`Total content tokens (${rawEstimatedTokens}) exceeded token budget (${budget}). Trimming lowest score blocks.`);
+  // 3. We are over budget - perform prioritized trimming with a final clipped fill block.
+  notes.push(`Total content tokens (${rawEstimatedTokens}) exceeded token budget (${budget}). Trimming and clipping lower priority content toward a +/-${tolerance} token target.`);
 
   // Sort blocks by importanceScore descending to prioritize high value blocks
   // If scores are equal, preserve DOM source order
@@ -52,6 +55,7 @@ export function applyTokenBudget(
   });
 
   const budgetedBlocks: ContentBlock[] = [];
+  const skippedBlocks: ContentBlock[] = [];
   let currentTokens = 0;
 
   for (const block of sortedBlocks) {
@@ -59,8 +63,21 @@ export function applyTokenBudget(
       budgetedBlocks.push(block);
       currentTokens += block.tokenEstimate;
     } else {
-      // Skip this block as it doesn't fit in the budget anymore
-      // (Optional: we can chunk it, but dropping it fits the schema better)
+      skippedBlocks.push(block);
+    }
+  }
+
+  if (budget - currentTokens > tolerance && skippedBlocks.length > 0) {
+    const remainingTokens = budget - currentTokens;
+    const filler = skippedBlocks.find((block) => block.text.length > 0);
+
+    if (filler) {
+      const clipped = clipBlockToTokenBudget(filler, remainingTokens);
+      if (clipped.tokenEstimate > 0) {
+        budgetedBlocks.push(clipped);
+        currentTokens += clipped.tokenEstimate;
+        notes.push(`Added a clipped block (${clipped.id}) to land closer to the requested budget.`);
+      }
     }
   }
 
@@ -88,5 +105,20 @@ export function applyTokenBudget(
       budgetStatus
     },
     compilerNotes: notes
+  };
+}
+
+function clipBlockToTokenBudget(block: ContentBlock, maxTokens: number): ContentBlock {
+  const maxChars = Math.max(0, maxTokens * 4);
+  const clippedText = block.text.slice(0, maxChars).replace(/\s+\S*$/, '').trim();
+  const suffix = block.text.length > clippedText.length ? ' ...' : '';
+  const text = clippedText ? `${clippedText}${suffix}` : '';
+
+  return {
+    ...block,
+    id: `${block.id}-budget-fill`,
+    text,
+    tokenEstimate: estimateTokenCount(text),
+    sourceOrder: block.sourceOrder
   };
 }

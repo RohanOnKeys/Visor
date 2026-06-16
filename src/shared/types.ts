@@ -140,8 +140,27 @@ export type ExtractionWarning = {
 
 // --- AgentContext Types ---
 
+export type AgentContextSchemaVersion =
+  | 'agent_context.compact.v1'
+  | 'agent_context.detailed.v1'
+  | 'agent_context.agent_action.v1'
+  | 'agent_context.rag.v1'
+  | 'agent_context.debug.v1';
+
+export type ModeProfile = {
+  mode: CompileRequest['mode'];
+  schemaVersion: AgentContextSchemaVersion;
+  objective: string;
+  includedSections: string[];
+  omittedSections: string[];
+  tokenTarget: number;
+  tokenTolerance: number;
+};
+
 export type AgentContext = {
-  schemaVersion: 'agent_context.v1';
+  schemaVersion: AgentContextSchemaVersion;
+  compileMode: CompileRequest['mode'];
+  modeProfile: ModeProfile;
   source: SourceInfo;
   pageClassification: PageClassification;
   summary: ContextSummary;
