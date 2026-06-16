@@ -173,14 +173,15 @@ function createStyle(): HTMLStyleElement {
     }
 
     .visor-close {
-      width: 24px;
-      height: 24px;
-      left: 11px;
-      top: 11px;
-      background: var(--visor-green);
+      width: 34px;
+      height: 34px;
+      left: 6px;
+      top: 6px;
+      background: rgba(30, 215, 96, 0.82);
+      backdrop-filter: blur(8px);
       opacity: 0;
       pointer-events: none;
-      transform: translate(var(--close-x, 0), var(--close-y, -88px)) scale(0.7);
+      transform: translate(var(--close-x, -48px), var(--close-y, 0)) scale(0.72);
     }
 
     .visor-close::before,
@@ -189,8 +190,8 @@ function createStyle(): HTMLStyleElement {
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 12px;
-      height: 2px;
+      width: 13px;
+      height: 2.5px;
       border-radius: 999px;
       background: #001409;
       transform-origin: center;
@@ -207,16 +208,21 @@ function createStyle(): HTMLStyleElement {
     .visor-widget.open .visor-close {
       opacity: 1;
       pointer-events: auto;
-      transform: translate(var(--close-x, 0), var(--close-y, -88px)) scale(1);
+      transform: translate(var(--close-x, -48px), var(--close-y, 0)) scale(0.92);
+    }
+
+    .visor-widget.open .visor-close:hover {
+      transform: translate(var(--close-x, -48px), var(--close-y, 0)) scale(1.18);
+      z-index: 3;
     }
 
     .visor-widget.open .visor-actions:hover .visor-action {
-      transform: translate(calc(var(--x) * 0.82), calc(var(--y) * 0.82)) scale(0.74);
-      opacity: 0.78;
+      transform: translate(calc(var(--x) * 0.94), calc(var(--y) * 0.94)) scale(0.82);
+      opacity: 0.82;
     }
 
     .visor-widget.open .visor-actions:hover .visor-action:hover {
-      transform: translate(calc(var(--x) * 0.92), calc(var(--y) * 0.92)) scale(1.18);
+      transform: translate(var(--x), var(--y)) scale(1.14);
       opacity: 1;
       z-index: 2;
     }
@@ -298,21 +304,22 @@ export async function mountVisorWidget(): Promise<void> {
     await unmountVisorWidget();
   });
 
+  const closePosition: [number, number] = [70, 0];
   const radialPositions: Record<AgentProvider, [number, number]> = {
-    chatgpt: [-40, -2],
-    grok: [-34, -38],
-    gemini: [0, -54],
-    claude: [34, -38]
+    chatgpt: [63, 39],
+    grok: [39, 63],
+    gemini: [0, 72],
+    claude: [-39, 63]
   };
   const actionButtons = new Map<AgentProvider, HTMLButtonElement>();
 
   const updateRadialPositions = () => {
     const rect = wrapper.getBoundingClientRect();
-    const horizontalSign = rect.left < 76 ? -1 : 1;
-    const verticalSign = rect.top < 76 ? -1 : 1;
+    const horizontalSign = rect.left < 76 ? 1 : -1;
+    const verticalSign = rect.top < 76 ? 1 : -1;
 
-    closeButton.style.setProperty('--close-x', '0px');
-    closeButton.style.setProperty('--close-y', `${-88 * verticalSign}px`);
+    closeButton.style.setProperty('--close-x', `${closePosition[0] * horizontalSign}px`);
+    closeButton.style.setProperty('--close-y', `${closePosition[1] * verticalSign}px`);
 
     actionButtons.forEach((button, provider) => {
       const [baseX, baseY] = radialPositions[provider];
