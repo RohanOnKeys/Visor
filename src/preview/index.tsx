@@ -106,7 +106,7 @@ function Preview() {
         <img
           src={chrome.runtime.getURL('visor-logo.png')}
           alt="Visor"
-          style={{ width: '72px', height: '72px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+          style={{ width: '72px', height: '72px', borderRadius: '999px', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
         />
         <h1 className="title-gradient" style={{ fontSize: '32px' }}>Dashboard</h1>
         <p style={{ color: 'var(--text-secondary)' }}>No compiled page snapshot found in local memory.</p>
@@ -126,7 +126,7 @@ function Preview() {
           <img
             src={chrome.runtime.getURL('visor-logo.png')}
             alt="Visor"
-            style={{ width: '42px', height: '42px', borderRadius: '999px', objectFit: 'cover', display: 'block', marginBottom: '8px' }}
+            style={{ width: '42px', height: '42px', borderRadius: '999px', objectFit: 'cover', objectPosition: 'center', display: 'block', marginBottom: '8px' }}
           />
           <h1 style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px' }}>{context.source.title}</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '13px', marginTop: '2px' }}>
@@ -170,12 +170,12 @@ function Preview() {
               className="btn-secondary"
               title={`Export to ${providerLabels[provider]}`}
               aria-label={`Export to ${providerLabels[provider]}`}
-              style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden' }}
+              style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden', display: 'grid', placeItems: 'center', lineHeight: 0 }}
             >
               <img
                 src={chrome.runtime.getURL(providerLogoFiles[provider])}
                 alt=""
-                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
               />
             </button>
           ))}

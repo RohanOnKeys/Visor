@@ -1,4 +1,4 @@
-import { UserSettings, SiteProfile, RecentCompileMetadata, AuthSession } from '../shared/types';
+import { UserSettings, SiteProfile, RecentCompileMetadata } from '../shared/types';
 
 const DEFAULT_SETTINGS: UserSettings = {
   defaultMode: 'compact',
@@ -18,17 +18,40 @@ function isExtensionEnvironment(): boolean {
   return typeof chrome !== 'undefined' && typeof chrome.storage !== 'undefined' && typeof chrome.storage.local !== 'undefined';
 }
 
+function getSessionStorageArea(): chrome.storage.StorageArea | undefined {
+  return (chrome.storage as any).session as chrome.storage.StorageArea | undefined;
+}
+
+async function loadSessionValue<T>(key: string): Promise<T | undefined> {
+  const session = getSessionStorageArea();
+  if (!session) return undefined;
+
+  return new Promise((resolve) => {
+    session.get([key], (result) => {
+      if (chrome.runtime.lastError) {
+        resolve(undefined);
+        return;
+      }
+      resolve(result[key] as T | undefined);
+    });
+  });
+}
+
+async function saveSessionValue(key: string, value: unknown): Promise<void> {
+  const session = getSessionStorageArea();
+  if (!session) return;
+
+  return new Promise((resolve) => {
+    session.set({ [key]: value }, () => {
+      resolve();
+    });
+  });
+}
+
 export async function loadSettings(): Promise<UserSettings> {
   if (isExtensionEnvironment()) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['settings'], (result) => {
-        if (result.settings) {
-          resolve({ ...DEFAULT_SETTINGS, ...result.settings });
-        } else {
-          resolve(DEFAULT_SETTINGS);
-        }
-      });
-    });
+    const settings = await loadSessionValue<Partial<UserSettings>>('settings');
+    return settings ? { ...DEFAULT_SETTINGS, ...settings } : DEFAULT_SETTINGS;
   } else {
     return memoryStorage['settings'] || DEFAULT_SETTINGS;
   }
@@ -36,11 +59,7 @@ export async function loadSettings(): Promise<UserSettings> {
 
 export async function saveSettings(settings: UserSettings): Promise<void> {
   if (isExtensionEnvironment()) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ settings }, () => {
-        resolve();
-      });
-    });
+    await saveSessionValue('settings', settings);
   } else {
     memoryStorage['settings'] = settings;
   }
@@ -95,7 +114,12 @@ export async function clearAllData(): Promise<void> {
   if (isExtensionEnvironment()) {
     return new Promise((resolve) => {
       chrome.storage.local.clear(() => {
-        resolve();
+        const session = getSessionStorageArea();
+        if (!session) {
+          resolve();
+          return;
+        }
+        session.clear(() => resolve());
       });
     });
   } else {
@@ -130,36 +154,4 @@ export async function saveRecentCompile(metadata: RecentCompileMetadata): Promis
   }
 
   memoryStorage['recentCompiles'] = updated;
-}
-
-export async function loadAuthSession(): Promise<AuthSession | undefined> {
-  if (isExtensionEnvironment()) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['authSession'], (result) => {
-        resolve(result.authSession as AuthSession | undefined);
-      });
-    });
-  }
-
-  return memoryStorage['authSession'] as AuthSession | undefined;
-}
-
-export async function saveAuthSession(session: AuthSession): Promise<void> {
-  if (isExtensionEnvironment()) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ authSession: session }, () => {
-        resolve();
-      });
-    });
-  }
-
-  memoryStorage['authSession'] = session;
-}
-
-export async function clearAuthSession(): Promise<void> {
-  if (isExtensionEnvironment()) {
-    return chrome.storage.local.remove('authSession');
-  }
-
-  delete memoryStorage['authSession'];
 }

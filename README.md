@@ -12,7 +12,6 @@ Visor is a Chrome MV3 extension that compiles the current webpage into structure
 - Floating in-page Visor logo widget with circular LLM export buttons
 - Agent Mode, RAG chunks, detailed mode, compact mode, and debug mode
 - Local privacy redaction and blocked-domain settings
-- Google OAuth sign-in through Chrome Identity
 - Clean black and green extension UI
 
 ## Development
@@ -40,16 +39,6 @@ For normal use, no npm command is required. The repository includes a ready-to-l
 4. Select the `dist` folder.
 
 After the extension is loaded, Visor stays active while browsing and keeps the current tab context updated automatically. A circular Visor logo widget floats on supported pages; click it to choose an LLM and dump the current page context directly. Use the popup when you want to inspect, copy, export, refresh manually, or relaunch the widget.
-
-## Google OAuth Setup
-
-The manifest contains a placeholder OAuth client ID:
-
-```json
-"client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com"
-```
-
-Replace it with a Chrome Extension OAuth client ID from Google Cloud before testing Google sign-in.
 
 ## Repository Notes
 

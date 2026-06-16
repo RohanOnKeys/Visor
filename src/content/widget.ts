@@ -25,6 +25,34 @@ type WidgetState = {
 
 let mountedHost: HTMLDivElement | undefined;
 
+function getSessionStorageArea(): chrome.storage.StorageArea | undefined {
+  return (chrome.storage as any).session as chrome.storage.StorageArea | undefined;
+}
+
+async function getSessionValue<T>(key: string): Promise<T | undefined> {
+  const session = getSessionStorageArea();
+  if (!session) return undefined;
+
+  return new Promise((resolve) => {
+    session.get([key], (result) => {
+      if (chrome.runtime.lastError) {
+        resolve(undefined);
+        return;
+      }
+      resolve(result[key] as T | undefined);
+    });
+  });
+}
+
+async function setSessionValue(key: string, value: unknown): Promise<void> {
+  const session = getSessionStorageArea();
+  if (!session) return;
+
+  return new Promise((resolve) => {
+    session.set({ [key]: value }, () => resolve());
+  });
+}
+
 function shouldMountWidget(): boolean {
   if (window.top !== window.self) return false;
   if (resolveAgentProvider(window.location.hostname)) return false;
@@ -86,6 +114,7 @@ function createStyle(): HTMLStyleElement {
       cursor: pointer;
       display: grid;
       place-items: center;
+      line-height: 0;
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32), 0 0 18px rgba(30, 215, 96, 0.14);
       transition: transform 180ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
       transform-origin: center;
@@ -111,6 +140,7 @@ function createStyle(): HTMLStyleElement {
       height: 42px;
       border-radius: 999px;
       object-fit: cover;
+      object-position: center;
       filter: saturate(1.18) contrast(1.06);
       pointer-events: none;
     }
@@ -148,11 +178,30 @@ function createStyle(): HTMLStyleElement {
       left: 11px;
       top: 11px;
       background: var(--visor-green);
-      color: #001409;
-      font: 700 18px/1 Inter, ui-sans-serif, system-ui, sans-serif;
       opacity: 0;
       pointer-events: none;
       transform: translate(var(--close-x, 0), var(--close-y, -88px)) scale(0.7);
+    }
+
+    .visor-close::before,
+    .visor-close::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 12px;
+      height: 2px;
+      border-radius: 999px;
+      background: #001409;
+      transform-origin: center;
+    }
+
+    .visor-close::before {
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .visor-close::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
     }
 
     .visor-widget.open .visor-close {
@@ -178,6 +227,7 @@ function createStyle(): HTMLStyleElement {
       display: block;
       border-radius: 999px;
       object-fit: cover;
+      object-position: center;
       pointer-events: none;
     }
 
@@ -201,8 +251,7 @@ export async function unmountVisorWidget(): Promise<void> {
 
 export async function mountVisorWidget(): Promise<void> {
   if (!shouldMountWidget()) return;
-  const settings = await chrome.storage.local.get(['settings']);
-  const savedSettings = (settings.settings || {}) as Partial<UserSettings>;
+  const savedSettings = (await getSessionValue<Partial<UserSettings>>('settings')) || {};
   if (savedSettings.widgetEnabled === false) return;
 
   document.documentElement.dataset.visorWidgetMounted = 'true';
@@ -239,16 +288,12 @@ export async function mountVisorWidget(): Promise<void> {
   closeButton.type = 'button';
   closeButton.title = 'Hide Visor widget';
   closeButton.setAttribute('aria-label', 'Hide Visor widget');
-  closeButton.textContent = 'x';
   closeButton.addEventListener('click', async (event) => {
     event.stopPropagation();
-    const current = await chrome.storage.local.get(['settings']);
-    const currentSettings = (current.settings || {}) as Partial<UserSettings>;
-    await chrome.storage.local.set({
-      settings: {
-        ...currentSettings,
-        widgetEnabled: false
-      }
+    const currentSettings = (await getSessionValue<Partial<UserSettings>>('settings')) || {};
+    await setSessionValue('settings', {
+      ...currentSettings,
+      widgetEnabled: false
     });
     await unmountVisorWidget();
   });
@@ -318,8 +363,7 @@ export async function mountVisorWidget(): Promise<void> {
   }
 
   const applySavedPosition = async () => {
-    const saved = await chrome.storage.local.get(['visorWidgetPosition']);
-    const position = saved.visorWidgetPosition as { left?: number; top?: number } | undefined;
+    const position = await getSessionValue<{ left?: number; top?: number }>('visorWidgetPosition');
     if (typeof position?.left !== 'number' || typeof position?.top !== 'number') return;
 
     const left = Math.min(Math.max(8, position.left), Math.max(8, window.innerWidth - 54));
@@ -347,7 +391,7 @@ export async function mountVisorWidget(): Promise<void> {
     dragging = false;
     wrapper.classList.remove('dragging');
     const rect = wrapper.getBoundingClientRect();
-    await chrome.storage.local.set({ visorWidgetPosition: { left: rect.left, top: rect.top } });
+    await setSessionValue('visorWidgetPosition', { left: rect.left, top: rect.top });
   };
 
   mainButton.addEventListener('pointerdown', (event) => {

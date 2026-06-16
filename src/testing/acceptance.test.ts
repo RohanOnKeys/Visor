@@ -109,9 +109,9 @@ describe('Acceptance guardrails', () => {
     const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'manifest.json'), 'utf8'));
 
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.permissions).toEqual(['activeTab', 'scripting', 'storage', 'identity', 'tabs']);
-    expect(manifest.host_permissions).toEqual(['https://www.googleapis.com/*']);
-    expect(manifest.oauth2.scopes).toEqual(['openid', 'email', 'profile']);
+    expect(manifest.permissions).toEqual(['activeTab', 'scripting', 'storage', 'tabs']);
+    expect(manifest.host_permissions).toBeUndefined();
+    expect(manifest.oauth2).toBeUndefined();
   });
 
   it('does not import external CSS assets in the extension UI', () => {

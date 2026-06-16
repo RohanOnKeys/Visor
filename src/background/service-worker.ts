@@ -2,7 +2,6 @@ import { AgentProvider, CompileRequest, CompileResponse, PageSnapshot, PendingAg
 import { compileSnapshot } from '../compiler/compiler';
 import { loadSettings, loadSiteProfiles, saveRecentCompile } from '../storage/settings';
 import { PageSnapshotSchema } from '../shared/schema';
-import { getStoredAuthSession, signInWithGoogle, signOutGoogle } from '../auth/googleAuth';
 
 type CompileTabOptions = {
   saveRecent: boolean;
@@ -19,6 +18,10 @@ const providerUrls: Record<AgentProvider, string> = {
   claude: 'https://claude.ai/new'
 };
 
+void (chrome.storage as any).session?.setAccessLevel?.({
+  accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS'
+});
+
 // Listen for messages from the Popup or Options page
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'VISOR_COMPILE_ACTIVE_TAB') {
@@ -27,24 +30,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   if (message.type === 'VISOR_EXPORT_ACTIVE_TAB_TO_AGENT') {
     handleExportActiveTabToAgent(message.payload.provider, message.payload.request, sendResponse);
-    return true;
-  }
-  if (message.type === 'VISOR_AUTH_GET_SESSION') {
-    getStoredAuthSession()
-      .then((session) => sendResponse({ ok: true, session }))
-      .catch((error: Error) => sendResponse({ ok: false, userMessage: error.message }));
-    return true;
-  }
-  if (message.type === 'VISOR_AUTH_SIGN_IN_GOOGLE') {
-    signInWithGoogle()
-      .then((session) => sendResponse({ ok: true, session }))
-      .catch((error: Error) => sendResponse({ ok: false, userMessage: error.message }));
-    return true;
-  }
-  if (message.type === 'VISOR_AUTH_SIGN_OUT') {
-    signOutGoogle()
-      .then(() => sendResponse({ ok: true }))
-      .catch((error: Error) => sendResponse({ ok: false, userMessage: error.message }));
     return true;
   }
   return false;
@@ -321,9 +306,28 @@ function isRestrictedUrl(url: string): boolean {
   );
 }
 
-async function updateBadge(tabId: number, text: string): Promise<void> {
-  await chrome.action.setBadgeText({ tabId, text });
-  await chrome.action.setBadgeBackgroundColor({ tabId, color: text === 'err' ? '#ef4444' : '#1ed760' });
+async function updateBadge(tabId: number, state: '' | 'on' | 'off' | 'err'): Promise<void> {
+  await chrome.action.setIcon({
+    tabId,
+    path: {
+      16: 'icons/icon-16.png',
+      32: 'icons/icon-32.png',
+      48: 'icons/icon-48.png',
+      128: 'icons/icon-128.png'
+    }
+  });
+  await chrome.action.setBadgeText({ tabId, text: state === 'err' ? '!' : '' });
+  await chrome.action.setBadgeBackgroundColor({ tabId, color: state === 'err' ? '#ef4444' : '#1ed760' });
+  await chrome.action.setTitle({
+    tabId,
+    title: state === 'on'
+      ? 'Visor active on this tab'
+      : state === 'off'
+        ? 'Visor blocked on this domain'
+        : state === 'err'
+          ? 'Visor needs attention'
+          : 'Visor Context Compiler'
+  });
 }
 
 function getHostname(rawUrl: string): string | undefined {

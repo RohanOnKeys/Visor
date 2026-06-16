@@ -327,22 +327,6 @@ export type RecentCompileMetadata = {
   riskLevel: string;
 };
 
-export type AuthProvider = 'google';
-
-export type AuthUser = {
-  id: string;
-  email: string;
-  name?: string;
-  pictureUrl?: string;
-  provider: AuthProvider;
-};
-
-export type AuthSession = {
-  user: AuthUser;
-  accessToken: string;
-  signedInAt: string;
-};
-
 export type AgentProvider = 'chatgpt' | 'grok' | 'gemini' | 'claude';
 
 export type PendingAgentExport = {

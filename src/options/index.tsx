@@ -1,9 +1,43 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthSession, UserSettings, SiteProfile } from '../shared/types';
+import { UserSettings, SiteProfile } from '../shared/types';
 import { loadSettings, saveSettings, loadSiteProfiles, saveSiteProfiles, clearAllData } from '../storage/settings';
-import { getAuthSession, signInWithGoogleFromClient, signOutFromClient } from '../auth/client';
 import '../index.css';
+
+function NumberStepper({
+  value,
+  onChange,
+  min = 100,
+  step = 500,
+  ariaLabel
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  step?: number;
+  ariaLabel: string;
+}) {
+  const applyValue = (nextValue: number) => {
+    onChange(Math.max(min, nextValue || min));
+  };
+
+  return (
+    <div className="visor-number-stepper">
+      <input
+        type="number"
+        aria-label={ariaLabel}
+        value={value}
+        min={min}
+        step={step}
+        onChange={(event) => applyValue(parseInt(event.target.value, 10))}
+      />
+      <div className="visor-number-stepper-buttons" aria-hidden="true">
+        <button type="button" tabIndex={-1} onClick={() => applyValue(value + step)}>+</button>
+        <button type="button" tabIndex={-1} onClick={() => applyValue(value - step)}>-</button>
+      </div>
+    </div>
+  );
+}
 
 function Options() {
   // Config states
@@ -23,9 +57,6 @@ function Options() {
   // Local string form states for array fields
   const [preserveText, setPreserveText] = useState<string>('');
   const [ignoreText, setIgnoreText] = useState<string>('');
-  const [authSession, setAuthSession] = useState<AuthSession | undefined>();
-  const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error'>('loading');
-  const [authError, setAuthError] = useState<string>('');
 
   // Load configuration on mount
   useEffect(() => {
@@ -43,38 +74,9 @@ function Options() {
       const profiles = await loadSiteProfiles();
       setSiteProfiles(profiles);
 
-      const session = await getAuthSession();
-      setAuthSession(session);
-      setAuthStatus('idle');
     }
     loadData();
   }, []);
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setAuthStatus('loading');
-      setAuthError('');
-      const session = await signInWithGoogleFromClient();
-      setAuthSession(session);
-      setAuthStatus('idle');
-    } catch (error: any) {
-      setAuthStatus('error');
-      setAuthError(error.message || 'Google sign-in failed.');
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      setAuthStatus('loading');
-      setAuthError('');
-      await signOutFromClient();
-      setAuthSession(undefined);
-      setAuthStatus('idle');
-    } catch (error: any) {
-      setAuthStatus('error');
-      setAuthError(error.message || 'Sign out failed.');
-    }
-  };
 
   const handleSaveSettings = async () => {
     try {
@@ -220,7 +222,7 @@ function Options() {
             <img
               src={chrome.runtime.getURL('visor-logo.png')}
               alt="Visor"
-              style={{ width: '52px', height: '52px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+              style={{ width: '52px', height: '52px', borderRadius: '999px', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
             />
             <h1 className="title-gradient" style={{ fontSize: '28px' }}>Control Panel</h1>
           </div>
@@ -238,25 +240,6 @@ function Options() {
         {/* LEFT COLUMN: Compiler Defaults & Blocks */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-          <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Account</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {authSession ? `${authSession.user.name || 'Google account'} · ${authSession.user.email}` : 'Sign in with Google to attach Visor to a user account.'}
-              </p>
-              {authError && <p style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '6px' }}>{authError}</p>}
-            </div>
-            {authSession ? (
-              <button onClick={handleSignOut} disabled={authStatus === 'loading'} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '13px' }}>
-                Sign out
-              </button>
-            ) : (
-              <button onClick={handleGoogleSignIn} disabled={authStatus === 'loading'} className="btn-primary" style={{ padding: '8px 14px', fontSize: '13px', minWidth: '140px' }}>
-                Google sign in
-              </button>
-            )}
-          </div>
-          
           {/* Default configurations */}
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Compiler Options</h2>
@@ -283,7 +266,7 @@ function Options() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Default Token Limit</label>
-              <input type="number" value={tokenBudget} onChange={(e) => setTokenBudget(parseInt(e.target.value) || 4000)} />
+              <NumberStepper value={tokenBudget} onChange={setTokenBudget} ariaLabel="Default token limit" />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

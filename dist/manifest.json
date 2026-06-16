@@ -3,12 +3,7 @@
   "name": "Visor DOM Context Compiler",
   "version": "0.1.0",
   "description": "Compile the current webpage DOM into safe, structured, agent-ready context.",
-  "permissions": ["activeTab", "scripting", "storage", "identity", "tabs"],
-  "host_permissions": ["https://www.googleapis.com/*"],
-  "oauth2": {
-    "client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": ["openid", "email", "profile"]
-  },
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "background": {
     "service_worker": "service-worker.js",
     "type": "module"

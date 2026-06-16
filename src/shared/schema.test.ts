@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AuthSessionSchema, PageSnapshotSchema, UserSettingsSchema } from './schema';
+import { PageSnapshotSchema, UserSettingsSchema } from './schema';
 
 describe('Zod Schema Validation', () => {
   it('should validate a valid UserSettings structure', () => {
@@ -10,6 +10,7 @@ describe('Zod Schema Validation', () => {
       defaultExport: 'json',
       debugMode: false,
       autoCompile: true,
+      widgetEnabled: true,
       blockedDomains: ['test.com']
     };
 
@@ -55,22 +56,6 @@ describe('Zod Schema Validation', () => {
     };
 
     const parsed = PageSnapshotSchema.safeParse(mockSnapshot);
-    expect(parsed.success).toBe(true);
-  });
-
-  it('should validate a Google auth session', () => {
-    const parsed = AuthSessionSchema.safeParse({
-      user: {
-        id: 'google-subject-id',
-        email: 'user@example.com',
-        name: 'Visor User',
-        pictureUrl: 'https://example.com/avatar.png',
-        provider: 'google'
-      },
-      accessToken: 'token',
-      signedInAt: new Date().toISOString()
-    });
-
     expect(parsed.success).toBe(true);
   });
 });

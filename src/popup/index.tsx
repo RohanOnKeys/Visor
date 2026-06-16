@@ -1,9 +1,114 @@
 import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AgentProvider, AuthSession, CompileRequest, CompileResponse, PendingAgentExport } from '../shared/types';
+import { AgentProvider, CompileRequest, CompileResponse, PendingAgentExport } from '../shared/types';
 import { loadSettings, saveSettings } from '../storage/settings';
-import { getAuthSession, signInWithGoogleFromClient, signOutFromClient } from '../auth/client';
 import '../index.css';
+
+type SelectOption<T extends string> = {
+  value: T;
+  label: string;
+};
+
+function GearIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="visor-gear-icon">
+      <path d="M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z" />
+      <path d="M19.4 13.4a7.8 7.8 0 0 0 0-2.8l2-1.5-2-3.5-2.4 1a8.7 8.7 0 0 0-2.4-1.4L14.2 2h-4.4l-.4 3.2A8.7 8.7 0 0 0 7 6.6l-2.4-1-2 3.5 2 1.5a7.8 7.8 0 0 0 0 2.8l-2 1.5 2 3.5 2.4-1a8.7 8.7 0 0 0 2.4 1.4l.4 3.2h4.4l.4-3.2a8.7 8.7 0 0 0 2.4-1.4l2.4 1 2-3.5-2-1.5Z" />
+    </svg>
+  );
+}
+
+function GreenSelect<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel
+}: {
+  value: T;
+  options: SelectOption<T>[];
+  onChange: (value: T) => void;
+  ariaLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value) || options[0];
+
+  return (
+    <div
+      style={{ position: 'relative' }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="visor-green-select-trigger"
+      >
+        <span>{selected.label}</span>
+        <span aria-hidden="true" className="visor-green-select-chevron" />
+      </button>
+      {open && (
+        <div className="visor-green-select-menu" role="listbox" tabIndex={-1}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className="visor-green-select-option"
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NumberStepper({
+  value,
+  onChange,
+  min = 100,
+  step = 500,
+  ariaLabel
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  step?: number;
+  ariaLabel: string;
+}) {
+  const applyValue = (nextValue: number) => {
+    onChange(Math.max(min, nextValue || min));
+  };
+
+  return (
+    <div className="visor-number-stepper">
+      <input
+        type="number"
+        aria-label={ariaLabel}
+        value={value}
+        min={min}
+        step={step}
+        onChange={(event) => applyValue(parseInt(event.target.value, 10))}
+      />
+      <div className="visor-number-stepper-buttons" aria-hidden="true">
+        <button type="button" tabIndex={-1} onClick={() => applyValue(value + step)}>+</button>
+        <button type="button" tabIndex={-1} onClick={() => applyValue(value - step)}>-</button>
+      </div>
+    </div>
+  );
+}
 
 function Popup() {
   const [activeTabInfo, setActiveTabInfo] = useState<{ title: string; url: string }>({ title: '', url: '' });
@@ -15,9 +120,6 @@ function Popup() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [compileResult, setCompileResult] = useState<CompileResponse | null>(null);
   const [lastAutoCompiledAt, setLastAutoCompiledAt] = useState<string>('');
-  const [authSession, setAuthSession] = useState<AuthSession | undefined>();
-  const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'error'>('loading');
-  const [authError, setAuthError] = useState<string>('');
   const [widgetEnabled, setWidgetEnabled] = useState<boolean>(true);
 
   // Initialize popup states from storage settings and tab info
@@ -60,38 +162,9 @@ function Popup() {
         });
       }
 
-      const session = await getAuthSession();
-      setAuthSession(session);
-      setAuthStatus('idle');
     }
     init();
   }, []);
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setAuthStatus('loading');
-      setAuthError('');
-      const session = await signInWithGoogleFromClient();
-      setAuthSession(session);
-      setAuthStatus('idle');
-    } catch (error: any) {
-      setAuthStatus('error');
-      setAuthError(error.message || 'Google sign-in failed.');
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      setAuthStatus('loading');
-      setAuthError('');
-      await signOutFromClient();
-      setAuthSession(undefined);
-      setAuthStatus('idle');
-    } catch (error: any) {
-      setAuthStatus('error');
-      setAuthError(error.message || 'Sign out failed.');
-    }
-  };
 
   const handleCompile = () => {
     setStatus('compiling');
@@ -167,6 +240,18 @@ function Popup() {
     gemini: 'Gemini',
     claude: 'Claude'
   };
+  const modeOptions: SelectOption<CompileRequest['mode']>[] = [
+    { value: 'compact', label: 'Compact Context' },
+    { value: 'detailed', label: 'Detailed Context' },
+    { value: 'agent_action', label: 'Agent Mode' },
+    { value: 'rag', label: 'RAG Chunks' },
+    { value: 'debug', label: 'Compiler Debug' }
+  ];
+  const privacyOptions: SelectOption<CompileRequest['privacyLevel']>[] = [
+    { value: 'low', label: 'Low Redaction' },
+    { value: 'medium', label: 'Medium Redaction' },
+    { value: 'strict', label: 'Strict Redaction' }
+  ];
 
   const handleProviderExport = async (provider: AgentProvider, promptBlock: string) => {
     const pendingExport: PendingAgentExport = {
@@ -220,41 +305,22 @@ function Popup() {
   };
 
   return (
-    <div style={{ width: '420px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }} className="glass-panel">
+    <div className="popup-shell">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <img
           src={chrome.runtime.getURL('visor-logo.png')}
           alt="Visor"
-          style={{ width: '44px', height: '44px', borderRadius: '999px', objectFit: 'cover', display: 'block' }}
+          style={{ width: '44px', height: '44px', borderRadius: '999px', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
         />
         <button 
           onClick={handleOpenSettings} 
-          className="btn-secondary" 
-          style={{ padding: '6px 10px', fontSize: '12px' }}
+          className="visor-settings-icon-button" 
           aria-label="Open Settings"
+          title="Open Settings"
         >
-          Settings
+          <GearIcon />
         </button>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-card)' }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Account</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '230px' }}>
-            {authSession ? authSession.user.email : 'Not signed in'}
-          </div>
-          {authError && <div style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '2px' }}>{authError}</div>}
-        </div>
-        {authSession ? (
-          <button onClick={handleSignOut} disabled={authStatus === 'loading'} className="btn-secondary" style={{ padding: '6px 10px', fontSize: '12px' }}>
-            Sign out
-          </button>
-        ) : (
-          <button onClick={handleGoogleSignIn} disabled={authStatus === 'loading'} className="btn-primary" style={{ padding: '6px 10px', fontSize: '12px' }}>
-            Google sign in
-          </button>
-        )}
       </div>
 
       {/* Target Page Info */}
@@ -324,32 +390,31 @@ function Popup() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Mode</label>
-          <select value={mode} onChange={(e) => setMode(e.target.value as any)}>
-            <option value="compact">Compact Context</option>
-            <option value="detailed">Detailed Context</option>
-            <option value="agent_action">Agent Mode</option>
-            <option value="rag">RAG Chunks</option>
-            <option value="debug">Compiler Debug</option>
-          </select>
+          <GreenSelect
+            value={mode}
+            options={modeOptions}
+            onChange={setMode}
+            ariaLabel="Select compiler mode"
+          />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Privacy Level</label>
-          <select value={privacyLevel} onChange={(e) => setPrivacyLevel(e.target.value as any)}>
-            <option value="low">Low Redaction</option>
-            <option value="medium">Medium Redaction</option>
-            <option value="strict">Strict Redaction</option>
-          </select>
+          <GreenSelect
+            value={privacyLevel}
+            options={privacyOptions}
+            onChange={setPrivacyLevel}
+            ariaLabel="Select privacy level"
+          />
         </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         <label style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Token Budget</label>
-        <input 
-          type="number" 
-          value={tokenBudget} 
-          onChange={(e) => setTokenBudget(parseInt(e.target.value) || 4000)}
-          style={{ width: '100%' }}
+        <NumberStepper
+          value={tokenBudget}
+          onChange={setTokenBudget}
+          ariaLabel="Token budget"
         />
       </div>
 
@@ -421,12 +486,12 @@ function Popup() {
                 className="btn-secondary"
                 title={`Export to ${providerLabels[provider]}`}
                 aria-label={`Export to ${providerLabels[provider]}`}
-                style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden', justifySelf: 'center' }}
+                style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden', justifySelf: 'center', display: 'grid', placeItems: 'center', lineHeight: 0 }}
               >
                 <img
                   src={chrome.runtime.getURL(providerLogoFiles[provider])}
                   alt=""
-                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
                 />
               </button>
             ))}

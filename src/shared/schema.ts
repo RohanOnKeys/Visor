@@ -307,19 +307,8 @@ export const UserSettingsSchema = z.object({
   defaultExport: z.enum(['json', 'markdown', 'prompt_block']),
   debugMode: z.boolean(),
   autoCompile: z.boolean(),
+  widgetEnabled: z.boolean(),
   blockedDomains: z.array(z.string())
-});
-
-export const AuthSessionSchema = z.object({
-  user: z.object({
-    id: z.string(),
-    email: z.string().email(),
-    name: z.string().optional(),
-    pictureUrl: z.string().url().optional(),
-    provider: z.literal('google')
-  }),
-  accessToken: z.string(),
-  signedInAt: z.string().datetime()
 });
 
 export const SiteProfileSchema = z.object({
