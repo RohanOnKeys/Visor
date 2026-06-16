@@ -169,6 +169,11 @@ function createStyle(): HTMLStyleElement {
       transform: translate(0, 0) scale(0.72);
     }
 
+    .visor-action[data-provider="chatgpt"] {
+      background: #ffffff;
+      border-color: rgba(255, 255, 255, 0.86);
+    }
+
     .visor-widget.open .visor-action {
       transform: translate(var(--x), var(--y)) scale(0.92);
     }

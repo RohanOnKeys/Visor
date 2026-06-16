@@ -549,7 +549,19 @@ function Popup() {
                 className="btn-secondary"
                 title={`Export to ${providerLabels[provider]}`}
                 aria-label={`Export to ${providerLabels[provider]}`}
-                style={{ width: '42px', height: '42px', padding: '0', borderRadius: '999px', overflow: 'hidden', justifySelf: 'center', display: 'grid', placeItems: 'center', lineHeight: 0 }}
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  padding: '0',
+                  borderRadius: '999px',
+                  overflow: 'hidden',
+                  justifySelf: 'center',
+                  display: 'grid',
+                  placeItems: 'center',
+                  lineHeight: 0,
+                  background: provider === 'chatgpt' ? '#ffffff' : undefined,
+                  borderColor: provider === 'chatgpt' ? 'rgba(255, 255, 255, 0.86)' : undefined
+                }}
               >
                 <img
                   src={chrome.runtime.getURL(providerLogoFiles[provider])}
