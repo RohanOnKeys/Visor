@@ -112,6 +112,3 @@ public/         icons, logos, and web-accessible assets
 
 `node_modules/` is intentionally ignored. `dist/` is committed so non-developer users can load the extension directly from GitHub.
 
-## License
-
-MIT
