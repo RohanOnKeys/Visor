@@ -78,6 +78,16 @@ body:has(.popup-shell) {
   background: var(--glass-bg);
 }
 
+.popup-shell,
+.popup-shell * {
+  font-family: var(--font-sans);
+}
+
+.popup-shell pre,
+.popup-shell code {
+  font-family: var(--font-sans);
+}
+
 .visor-settings-icon-button {
   width: 38px;
   height: 38px;

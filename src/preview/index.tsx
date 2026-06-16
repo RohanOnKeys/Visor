@@ -175,7 +175,14 @@ function Preview() {
               <img
                 src={chrome.runtime.getURL(providerLogoFiles[provider])}
                 alt=""
-                style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
+                style={{
+                  width: provider === 'chatgpt' ? '78%' : '100%',
+                  height: provider === 'chatgpt' ? '78%' : '100%',
+                  display: 'block',
+                  borderRadius: '999px',
+                  objectFit: provider === 'chatgpt' ? 'contain' : 'cover',
+                  objectPosition: 'center'
+                }}
               />
             </button>
           ))}

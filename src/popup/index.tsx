@@ -88,8 +88,16 @@ function NumberStepper({
   step?: number;
   ariaLabel: string;
 }) {
+  const [draftValue, setDraftValue] = useState(String(value));
+
+  useEffect(() => {
+    setDraftValue(String(value));
+  }, [value]);
+
   const applyValue = (nextValue: number) => {
-    onChange(Math.max(min, nextValue || min));
+    const normalized = Math.max(min, Number.isFinite(nextValue) ? nextValue : min);
+    setDraftValue(String(normalized));
+    onChange(normalized);
   };
 
   return (
@@ -97,10 +105,20 @@ function NumberStepper({
       <input
         type="number"
         aria-label={ariaLabel}
-        value={value}
+        value={draftValue}
         min={min}
         step={step}
-        onChange={(event) => applyValue(parseInt(event.target.value, 10))}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          setDraftValue(nextValue);
+          if (nextValue.trim() !== '') {
+            const parsed = parseInt(nextValue, 10);
+            if (Number.isFinite(parsed)) {
+              onChange(Math.max(min, parsed));
+            }
+          }
+        }}
+        onBlur={() => applyValue(parseInt(draftValue, 10))}
       />
       <div className="visor-number-stepper-buttons" aria-hidden="true">
         <button type="button" tabIndex={-1} onClick={() => applyValue(value + step)}>+</button>
@@ -374,7 +392,7 @@ function Popup() {
         <div style={{ fontWeight: 500, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {activeTabInfo.title}
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
           {truncateUrl(activeTabInfo.url)}
         </div>
         <div style={{ fontSize: '11px', color: 'var(--secondary)', marginTop: '6px', fontWeight: 700 }}>
@@ -536,7 +554,14 @@ function Popup() {
                 <img
                   src={chrome.runtime.getURL(providerLogoFiles[provider])}
                   alt=""
-                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', objectPosition: 'center' }}
+                  style={{
+                    width: provider === 'chatgpt' ? '78%' : '100%',
+                    height: provider === 'chatgpt' ? '78%' : '100%',
+                    display: 'block',
+                    borderRadius: '999px',
+                    objectFit: provider === 'chatgpt' ? 'contain' : 'cover',
+                    objectPosition: 'center'
+                  }}
                 />
               </button>
             ))}

@@ -238,6 +238,12 @@ function createStyle(): HTMLStyleElement {
       pointer-events: none;
     }
 
+    .visor-action[data-provider="chatgpt"] img {
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+    }
+
     .visor-action[disabled] {
       cursor: wait;
       opacity: 0.62;
@@ -349,6 +355,7 @@ export async function mountVisorWidget(): Promise<void> {
   (Object.keys(providerLabels) as AgentProvider[]).forEach((provider) => {
     const button = document.createElement('button');
     button.className = 'visor-action';
+    button.dataset.provider = provider;
     button.type = 'button';
     button.title = `Dump current page context to ${providerLabels[provider]}`;
     button.setAttribute('aria-label', `Dump current page context to ${providerLabels[provider]}`);
