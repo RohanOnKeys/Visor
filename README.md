@@ -2,7 +2,7 @@
 
 # Visor DOM Context Compiler
 
-Visor is a Chrome MV3 extension that compiles the current webpage into structured, privacy-aware context for AI agents.
+Visor is a Chrome MV3 extension that compiles the current webpage into structured, privacy-aware context for AI agents
 
 ## Problem Statement
 
